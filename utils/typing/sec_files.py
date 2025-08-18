@@ -1,5 +1,4 @@
 from typing import Optional, List
-from pathlib import Path
 
 from pydantic import BaseModel
 
@@ -12,7 +11,7 @@ class SECDocument(BaseModel):
     company: Optional[str] = None
     date: str
     text: str
-    path: Path
+    path: str
     report_text: Optional[str] = None # text that is after the TOC 
     toc: Optional[str] = None 
     tables: Optional[List[str]] = None 
@@ -23,16 +22,18 @@ class SECDocument(BaseModel):
 
 
 class SECPart(BaseModel):
+    id: str
     title: str
-    preface: str
-    section: str
+    text: Optional[str] = ""
+    section: Optional[str] = None
     items: List["SECItem"] = []
     page_number: int = 0
     prev_chunk: Optional["SECPart | SECItem"] = None
     next_chunk: Optional["SECPart | SECItem"] = None
 
 class SECItem(BaseModel):
-    text: Optional[str] = None
+    id: str
+    text: Optional[str] = None # SECItems will throw Pydantic Error when added to VectorObject
     title: str
     subsection: str
     page: str

@@ -4,24 +4,30 @@ from datetime import datetime
 
 from pydantic import BaseModel, field_validator
 
+from utils.typing.common import EntityType
+
 class VectorObject(BaseModel):
     id: str
     ticker: str
     company: Optional[str] = None
     date: str
-    year: int
+    year: Optional[int] = None # Year is autofilled based on Date
     form_type: str
     text: str
-    orginal_documnet: Optional[str] = None
-    document_path: Optional[str] = None
+    page_number: int
+    section: str
+    title: str
+    document_path: str
+    entity_type: EntityType 
+    subsection: Optional[str] = None
     embeddings: List[float]
-    chunk_type: Optional[str] = None
-
-    # TODO: Potential add in a Linked List like system to store the previous context
-    #       Include / Inherit from the SECDocument Object so it can be unpacked directly
-
+    prev_chunk_id: Optional[str] = None
+    next_chunk_id: Optional[str] = None
     commission_number: Optional[str | None] = None
     period_end: Optional[str | None] = None
+
+    # TODO: Include / Inherit from the SECDocument Object so it can be unpacked directly
+
  
     @field_validator('date')
     @classmethod

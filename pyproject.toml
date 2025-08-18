@@ -43,4 +43,10 @@ dependencies = [
     "uvicorn==0.34.2",
     "tiktoken>=0.11.0",
     "numpy>=2.3.2",
+    "scikit-learn>=1.7.1",
+]
+
+[tool.uv.workspace]
+members = [
+    "gp-mcp-demo",
 ]

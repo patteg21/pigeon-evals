@@ -11,7 +11,7 @@ from pinecone import (
 
 from utils.typing import (
     VectorObject,
-    Pooling
+    Pooling,
 )
 
 load_dotenv()
@@ -57,7 +57,12 @@ class EmbeddingModel:
     async def _is_too_large(self, tokens):
         return True if tokens > self.max_tokens else False
 
-
+    @staticmethod
+    def _l2n(v: np.ndarray, eps: float = 1e-8) -> np.ndarray:
+        """L2 normalization to put between units between 0-1 """
+        n = np.linalg.norm(v) + eps
+        return v / n
+    
     @staticmethod
     def _pool(
         vecs: np.ndarray, 
@@ -83,6 +88,7 @@ class EmbeddingModel:
 
 
     def _chunk_by_tokens(self, text: str, max_tokens: int, overlap: int) -> List[str]:
+        """ Chunking based on the overlap and max_tokens """
         ids = self.encoding.encode(text)
         if len(ids) <= max_tokens:
             return [text]
@@ -90,11 +96,13 @@ class EmbeddingModel:
         while start < len(ids):
             end = min(start + max_tokens, len(ids))
             chunks.append(self.encoding.decode(ids[start:end]))
-            if end == len(ids): break
+            if end == len(ids): 
+                break
             start = max(0, end - overlap)
         return chunks
 
-    
+        
+
     async def create_embedding(
         self,
         text: str,
@@ -152,7 +160,7 @@ class EmbeddingModel:
         chunks = self._chunk_by_tokens(text, cap, overlap_tokens) # chunk the text
 
         embs: List[List[float]] = []
-        for i in range(0, len(chunks), batch_size):
+        for i in range(0, len(chunks), batch_size): # batch embeddigs
             embs.extend(await self.create_embeddings_batch(chunks[i:i+batch_size]))
 
         vecs = np.asarray(embs, dtype=np.float32)
@@ -170,6 +178,11 @@ class VectorDB:
     def __init__(self, index_name="sec-embeddings"):
         self.client = Pinecone(api_key=os.getenv("PINECONE_API_KEY"))
         self.index = self.client.Index(index_name)
+
+    def retrieve_from_id(self, vector_id: str):
+        """Retrieve a vector by its ID"""
+        response = self.index.fetch(ids=[vector_id])
+        return response.vectors.get(vector_id)
 
     def upload(self, vector_object: VectorObject):
         metadata: Dict = vector_object.model_dump(exclude={'id', 'embeddings'})
@@ -195,3 +208,7 @@ class VectorDB:
     def delete(self, ids: List[str]):
         """Delete vectors by IDs"""
         return self.index.delete(ids=ids)
+    
+    def clear(self):
+        """Completely wipe all vectors from the index"""
+        return self.index.delete(delete_all=True)

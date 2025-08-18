@@ -46,7 +46,14 @@ ROMAN_PART = re.compile(r"(PART\s+[IVXLCDM]+\.?)", re.IGNORECASE)
 ITEM_ROW   = re.compile(r"(Item\s+\d+[A-Z]?\.)\s*\|\s*(.*?)\s*\|\s*(\d+)", re.IGNORECASE)
 def parse_table_of_contents(document: SECDocument) -> None:
     toc = document.toc
-    chunks = ROMAN_PART.split(toc)  # ["...", "PART I.", "body...", "PART II.", "body...", ...]
+
+    # TODO: FIX THIS OCR ERROR
+    toc = toc.replace("P | art | I", "Part I")
+    toc = toc.replace("P | art | II", "Part II")
+    toc = toc.replace("P | art | III", "Part III")
+    toc = toc.replace("P | art | IV", "Part IV")
+
+    chunks = ROMAN_PART.split(toc) 
 
     parts: List[SECPart] = []
     items: List[SECItem] = []
@@ -61,14 +68,9 @@ def parse_table_of_contents(document: SECDocument) -> None:
             section = chunk.upper().rstrip(".")
             body: str = (next(it, "") or "").strip()
 
-            # preface = body before first Item
-            first_item = ITEM_ROW.search(body)
-            preface = body[: first_item.start()].strip() if first_item else body
-
             sec_part = SECPart(
                 id=uuid4().hex,
                 title=section,         # e.g. "PART I"
-                preface=preface,       # free text before first Item
                 section=section
             )
             parts.append(sec_part)
@@ -80,12 +82,14 @@ def parse_table_of_contents(document: SECDocument) -> None:
                 page = m.group(3).strip()         # "3"
 
                 sec_item = SECItem(
+                    id=uuid4().hex,
                     title=title,
                     subsection=subsection,
                     page=page,
                 )
                 sec_part.items.append(sec_item)
                 items.append(sec_item)
+
 
 
 
@@ -96,74 +100,74 @@ def _compute_page_number(body: str, pos: int) -> int:
     return body[:pos].count("[PAGE_BREAK]") + 1
 
 
+def _compile_fuzzy(label: str) -> re.Pattern:
+    base = re.sub(r'[\s|]+', '', label.strip())  
+    parts = []
+    for ch in base:
+        if ch == '.':
+            parts.append(r'\.?\s*')           # dot often missing; make optional
+        else:
+            parts.append(re.escape(ch) + r'[\s|]*')
+    return re.compile(''.join(parts), re.IGNORECASE)
+
+
+def _find_span_fuzzy(text: str, label: str) -> tuple[int, int]:
+    m = _compile_fuzzy(label).search(text)
+    return (m.start(), m.end()) if m else (-1, -1)
+
+
 def extract_item_sections(document: SECDocument) -> None:
     """
     Build a single linked sequence across parts and items via prev_chunk/next_chunk.
     Also sets page_number for both parts and items based on [PAGE_BREAK] markers,
-    and fills item.text spans.
+    and fills item.text spans. Handles OCR like 'I TEM 11.' by fuzzy matching.
     """
-    body = document.report_text or document.text or ""
+    body = document.report_text or ""
     if not body or not getattr(document, "parts", None):
         return
 
-    low = body.lower()
-    # Collect (start_pos, node_obj) for global ordering
     positions: list[tuple[int, object]] = []
 
     for part in document.parts or []:
         if not getattr(part, "items", None):
             continue
 
-        # Locate this PART
-        part_start = low.find(part.title.lower())
+        # Locate PART header fuzzily (handles 'P A R T  I', etc.)
+        part_start, part_end = _find_span_fuzzy(body, part.title or part.section or "PART")
         if part_start == -1:
-            part_start = 0  # fallback if header string wasn't matched
+            part_start, part_end = (0, 0)  # fallback
 
-        # Page number for the PART header
         part.page_number = _compute_page_number(body, part_start)
         positions.append((part_start, part))
 
-        # Preface = between PART header and first Item
-        first_item = part.items[0]
-        first_item_start = low.find(first_item.subsection.lower(), part_start)
-        if first_item_start != -1:
-            part.preface = body[part_start:first_item_start].strip()
+        # Preface = between PART header and first Item (fuzzy)
+        if part.items:
+            f0 = part.items[0]
+            first_item_start, _ = _find_span_fuzzy(body, f0.subsection)
+            if first_item_start != -1 and first_item_start > part_start:
+                part.text = body[part_start:first_item_start].strip()
 
-        # Process items (assign text, page_number, record start positions)
+        # Items
         for j, item in enumerate(part.items):
-            start = low.find(item.subsection.lower(), part_start)
+            start, _ = _find_span_fuzzy(body, item.subsection)
             if start == -1:
-                # Skip linking/text if we can't locate it
                 continue
 
-            # Determine end: up to next item in same part, else to end of body
             if j + 1 < len(part.items):
-                next_label = part.items[j + 1].subsection.lower()
-                end = low.find(next_label, start + 1)
-                if end == -1:
+                # end at next item's fuzzy start
+                next_label = part.items[j + 1].subsection
+                end, _dummy = _find_span_fuzzy(body, next_label)
+                if end == -1 or end <= start:
                     end = len(body)
             else:
                 end = len(body)
 
             item.text = body[start:end].strip()
             item.page_number = _compute_page_number(body, start)
-
             positions.append((start, item))
 
-    # Sort all chunks by their start position and wire prev_chunk/next_chunk
+    # Wire prev/next
     positions.sort(key=lambda x: x[0])
     for i, (_, node) in enumerate(positions):
-        prev_node = positions[i - 1][1] if i > 0 else None
-        next_node = positions[i + 1][1] if i + 1 < len(positions) else None
-
-        # Both SECPart and SECItem expose prev_chunk/next_chunk
-        setattr(node, "prev_chunk", prev_node)
-        setattr(node, "next_chunk", next_node)
-
-
-# TODO: For compute, cache system or search in DB to see if it exists already
-def embedded_text(embedding_model: EmbeddingModel, text: str):
-    tokens: int = embedding_model.count_tokens()
-    
-    pass
-
+        setattr(node, "prev_chunk", positions[i - 1][1] if i > 0 else None)
+        setattr(node, "next_chunk", positions[i + 1][1] if i + 1 < len(positions) else None)
