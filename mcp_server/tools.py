@@ -1,13 +1,14 @@
 import numpy as np
 from mcp.server.fastmcp import FastMCP
 
-from clients import VectorDB, EmbeddingModel
+from mcp_server.clients import VectorDB, EmbeddingModel
 
 from utils import logger
 from utils.pca import PCALoader
 from utils.typing import (
     EntityType,
-    TableImageData
+    TableImageData,
+    PineconeResponse
 )
 from mcp_server.visuals.table import create_table_image
 
@@ -30,6 +31,7 @@ def init_mcp_tools(mcp: FastMCP):
         v = v / (np.linalg.norm(v) + 1e-9)
         return v.tolist()
 
+
     logger.info("Adding Tools to MCP Server...")
 
     @mcp.tool()
@@ -37,32 +39,42 @@ def init_mcp_tools(mcp: FastMCP):
         """
         Embed the query, apply PCA reducer (if loaded), then ANN search.
         """
-        vec = await embedding_model.create_embedding(query)
-        vec = _reduce(vec)
-        return vector_db_client.query(vec, top_k=10, include_metadata=True)
+        try:
+            vec = await embedding_model.create_embedding(query)
+            vec = _reduce(vec)
+            response: PineconeResponse = vector_db_client.query(vec, top_k=10, include_metadata=True)
+            return response
+        except Exception as e:
+            logger.error(f"Error in vector_search: {e}")
+            return {"error": str(e), "matches": []}
 
 
     @mcp.tool()
-    def search_metadata(
+    async def search_on_metadata(
             query: str, 
             entity_type: EntityType | None = None, 
             year: str| None = None,
             ticker: str | None =None
         ):
-
-        vector = embedding_model.create_embedding(query)
-
-        vector_db_client.retrieve_by_metadata(vector, entity_type=entity_type, year=year, ticker=ticker)
+        try:
+            vector = await embedding_model.create_embedding(query)
+            response: PineconeResponse = vector_db_client.retrieve_by_metadata(vector, entity_type=entity_type, year=year, ticker=ticker)
+            return response
+        except Exception as e:
+            logger.error(f"Error in search_on_metadata: {e}")
+            return {"error": str(e), "matches": []}
 
 
     @mcp.tool()
     def search_by_id(vector_id: str):
-        """This is meant for the Agent to Be able to Chain and `scroll` through related content proximity"""
-        vector_db_client.retrieve_from_id(vector_id=vector_id)
+        """This is meant for the Agent to Be able to Chain and `scroll` by content proximity"""
+        try:
+            response: PineconeResponse = vector_db_client.retrieve_from_id(vector_id=vector_id)
+            return response
+        except Exception as e:
+            logger.error(f"Error in search_by_id: {e}")
+            return {"error": str(e), "matches": []}
 
-    @mcp.tool()
-    def latest_filing(query: str, year: int, ticker: str | None):
-        pass
 
     @mcp.tool()
     def create_table_visualization(

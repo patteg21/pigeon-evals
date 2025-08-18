@@ -6,7 +6,7 @@ import asyncio
 import json
 import re
 
-from clients import VectorDB, EmbeddingModel
+from mcp_server.clients import VectorDB, EmbeddingModel
 from utils.typing import (
     VectorObject,
     SECDocument,
@@ -15,16 +15,11 @@ from utils.typing import (
 )
 from utils import logger
 from utils.pca import PCALoader
+from preprocess.extraction import extract_toc, parse_table_of_contents, extract_item_sections
+from preprocess.metadata import get_sec_metadata
 
-from preprocessing.extraction import extract_toc, parse_table_of_contents, extract_item_sections
-from preprocessing.metadata import get_sec_metadata
 
-
-import re
-from uuid import uuid4
-from typing import List
-
-def _chunk_by_page_and_max_tokens(item: SECItem, embedding_model: EmbeddingModel) -> List[SECItem]:
+async def _chunk_by_page_and_max_tokens(item: SECItem, embedding_model: EmbeddingModel) -> List[SECItem]:
     max_tokens = embedding_model.max_tokens
     overlap = 128
 
@@ -36,7 +31,7 @@ def _chunk_by_page_and_max_tokens(item: SECItem, embedding_model: EmbeddingModel
     # pack into chunks across multiple pages
     for offset, page in enumerate(pages):
         candidate = (cur_text + " " + page).strip()
-        if embedding_model.count_tokens(candidate) <= max_tokens:
+        if await embedding_model.count_tokens(candidate) <= max_tokens:
             # safe to keep accumulating
             if not cur_text:
                 cur_start_page = item.page_number + offset
@@ -86,9 +81,9 @@ def _chunk_by_page_and_max_tokens(item: SECItem, embedding_model: EmbeddingModel
 
     # updates the pre-exisiting 
     if item.prev_chunk:
-        item.prev_chunk.next_chunk = results[0].id
+        item.prev_chunk.next_chunk = results[0]
     if item.next_chunk:
-        item.next_chunk.prev_chunk = results[-1].id
+        item.next_chunk.prev_chunk = results[-1]
     
     return results
 
@@ -153,12 +148,14 @@ async def process(
                 "prev_chunk_id": getattr(item.prev_chunk, "id", None),
                 "next_chunk_id": getattr(item.next_chunk, "id", None),
             }
-            embeddings = await embedding_model.create_embedding(item.text, strategy="mean")
-            if embedding_model.count_tokens(item.text) > embedding_model.max_tokens:
+            token_count = await embedding_model.count_tokens(item.text)
+            if token_count > embedding_model.max_tokens:
                 # TODO: handles very large files and chunks them due to metadata limitation 
-                split_sec_items: List[SECItem] = _chunk_by_page_and_max_tokens(item, embedding_model) 
+                split_sec_items: List[SECItem] = await _chunk_by_page_and_max_tokens(item, embedding_model) 
                 for split in split_sec_items: 
                     item_data = split.__dict__
+                    embeddings = await embedding_model.create_embedding(split.text, strategy="mean")
+
                     links = {
                         "prev_chunk_id": getattr(item.prev_chunk, "id", None),
                         "next_chunk_id": getattr(item.next_chunk, "id", None),
@@ -173,8 +170,8 @@ async def process(
                     )
                     vector_objects.append(vo)
             else:
+                embeddings = await embedding_model.create_embedding(item.text, strategy="mean")
                 item_data = item.__dict__
-
                 vo = VectorObject(
                     **document_data,
                     **links,
@@ -213,10 +210,11 @@ async def process(
         )
         vector_objects.append(vo)
 
-    Path("outputs").mkdir(exist_ok=True)
-    output_filename = f"outputs/{company_name}_{filing_date}.json"
-    with open(output_filename, "w", encoding="utf-8") as f:
-        json.dump([vo.model_dump() for vo in vector_objects], f, indent=4)
+    if False:
+        Path("outputs").mkdir(exist_ok=True)
+        output_filename = f"outputs/{company_name}_{filing_date}.json"
+        with open(output_filename, "w", encoding="utf-8") as f:
+            json.dump([vo.model_dump() for vo in vector_objects], f, indent=4)
     return vector_objects
 
 

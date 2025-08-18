@@ -78,3 +78,83 @@ class VectorObject(BaseModel):
             raise ValueError(f"Invalid date: {date}. {str(e)}")
         
         return date
+    
+
+class PineconeResponse(VectorObject):
+    """Response object from Pinecone queries with human-readable conversion"""
+    embeddings: Optional[List[float]] = None
+    score: Optional[float] = None
+
+    @classmethod
+    def from_pinecone_match(cls, match_dict: Dict) -> 'PineconeResponse':
+        """Create PineconeResponse from Pinecone query match result"""
+        metadata = match_dict.get('metadata', {})
+        
+        return cls(
+            id=match_dict.get('id', ''),
+            score=match_dict.get('score'),
+            embeddings=match_dict.get('values'),
+            ticker=metadata.get('ticker', ''),
+            date=metadata.get('date', ''),
+            year=metadata.get('year'),
+            form_type=metadata.get('form_type', ''),
+            text=metadata.get('text', ''),
+            page_number=metadata.get('page_number', 0),
+            document_path=metadata.get('document_path', ''),
+            entity_type=EntityType(metadata.get('entity_type', 'UNKNOWN')),
+            title=metadata.get('title'),
+            section=metadata.get('section'),
+            subsection=metadata.get('subsection'),
+            company=metadata.get('company'),
+            prev_chunk_id=metadata.get('prev_chunk_id'),
+            next_chunk_id=metadata.get('next_chunk_id'),
+            commission_number=metadata.get('commission_number'),
+            period_end=metadata.get('period_end')
+        )
+
+    @property
+    def llm_readable(self) -> str:
+        """Convert to human-readable format for LLM consumption"""
+        readable_parts = []
+        
+        # Document identification
+        readable_parts.append(f"Document: {self.form_type} filing for {self.ticker}")
+        if self.company:
+            readable_parts.append(f"Company: {self.company}")
+        
+        # Date and period information
+        readable_parts.append(f"Date: {self.date}")
+        if self.period_end:
+            readable_parts.append(f"Period End: {self.period_end}")
+        
+        # Document structure
+        if self.title:
+            readable_parts.append(f"Title: {self.title}")
+        if self.section:
+            readable_parts.append(f"Section: {self.section}")
+        if self.subsection:
+            readable_parts.append(f"Subsection: {self.subsection}")
+        
+        readable_parts.append(f"Page: {self.page_number}")
+        
+        # Similarity score if available
+        if self.score is not None:
+            readable_parts.append(f"Relevance Score: {self.score:.4f}")
+        
+        # Main content
+        readable_parts.append(f"\nContent:\n{self.text}")
+        
+        # Navigation information
+        if self.prev_chunk_id or self.next_chunk_id:
+            nav_info = []
+            if self.prev_chunk_id:
+                nav_info.append(f"Previous: {self.prev_chunk_id}")
+            if self.next_chunk_id:
+                nav_info.append(f"Next: {self.next_chunk_id}")
+            readable_parts.append(f"Navigation: {' | '.join(nav_info)}")
+        
+        return "\n".join(readable_parts)
+
+    def to_text(self) -> str:
+        """Alias for llm_readable for backward compatibility"""
+        return self.llm_readable

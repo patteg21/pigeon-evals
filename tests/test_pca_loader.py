@@ -2,11 +2,11 @@ import pytest
 import numpy as np
 import os
 import tempfile
-from unittest.mock import AsyncMock, patch
+from unittest.mock import patch
 
-from clients import EmbeddingModel
+from mcp_server.clients import EmbeddingModel
 from utils.pca import PCALoader
-
+from utils import logger
 
 class TestPCALoader:
     """Test cases for PCALoader with embedding vector generation"""
@@ -220,7 +220,7 @@ class TestPCALoader:
                 # Simulate the tools.py workflow - PCA MUST load successfully
                 try:
                     reducer = PCALoader(path="artifacts/sec_pca_512.joblib").load()
-                    print("PCA reducer loaded for query-time dimensionality reduction.")
+                    logger.info("PCA reducer loaded for query-time dimensionality reduction.")
                 except Exception as e:
                     pytest.fail(f"PCA loading failed in tools.py workflow: {e}")
                 

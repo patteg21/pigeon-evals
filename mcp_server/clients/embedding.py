@@ -6,15 +6,9 @@ import numpy as np
 import diskcache as dc
 from dotenv import load_dotenv
 from openai import AsyncOpenAI
-from pinecone import (
-    Pinecone
-)
-
 
 from utils.typing import (
-    VectorObject,
     Pooling,
-    EntityType
 )
 
 load_dotenv()
@@ -184,71 +178,3 @@ class EmbeddingModel:
         cache[text] = out
         return out
     
-
-class VectorDB:
-    def __init__(self, index_name="sec-embeddings"):
-        self.client = Pinecone(api_key=os.getenv("PINECONE_API_KEY"))
-        self.index = self.client.Index(index_name)
-
-    def retrieve_from_id(self, vector_id: str):
-        """Retrieve a vector by its ID"""
-        response = self.index.fetch(ids=[vector_id])
-        return response.vectors.get(vector_id)
-    
-    
-    # TODO: Error Handles for non existent years 
-    def retrieve_by_metadata(
-        self,
-        vector: list[float],
-        *,
-        entity_type: EntityType | None = None,
-        ticker: str | None = None,
-        year: str | None = None,
-        top_k: int = 10
-    ):
-        """Search only vectors with metadata.entity_type == entity_type (and optional ticker)."""
-        
-        filt = {}
-        if entity_type:
-            filt["ticker"] = {"$eq": entity_type}
-        if ticker:
-            filt["ticker"] = {"$eq": ticker}
-        if year:
-            filt["year"] = {"$eq": year}
-
-        return self.index.query(
-            vector=vector,
-            top_k=top_k,
-            include_metadata=True,
-            filter=filt
-        )
-
-
-    def upload(self, vector_object: VectorObject):
-        """Uploads a VectorObject"""
-        
-        # Prepare vector for upsert
-        vector_data = {
-            "id": vector_object.id,
-            "values": vector_object.embeddings,
-            "metadata": vector_object.pinecone_metadata
-        }
-        
-        return self.index.upsert(vectors=[vector_data])
-    
-    
-    def query(self, vector, top_k=10, include_metadata=True):
-        """Query the index for similar vectors"""
-        return self.index.query(
-            vector=vector,
-            top_k=top_k,
-            include_metadata=include_metadata
-        )
-    
-    def delete(self, ids: List[str]):
-        """Delete vectors by IDs"""
-        return self.index.delete(ids=ids)
-    
-    def clear(self):
-        """Completely wipe all vectors from the index"""
-        return self.index.delete(delete_all=True)
