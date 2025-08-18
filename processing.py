@@ -5,15 +5,15 @@ import os
 import asyncio
 import json
 
-import numpy as np
-from sklearn.decomposition import PCA
-
 from clients import VectorDB, EmbeddingModel
 from utils.typing import (
     VectorObject,
-    SECDocument
+    SECDocument,
+    SECTable
 )
 from utils import logger
+from utils.pca import PCALoader
+
 from preprocessing.extraction import extract_toc, parse_table_of_contents, extract_item_sections
 from preprocessing.metadata import get_sec_metadata
 
@@ -49,11 +49,11 @@ async def process(
     )
 
     get_sec_metadata(document, form_type)
-    extract_toc(document)
-    toc_index = document.text.find(document.toc)
+    table_of_contents: SECTable = extract_toc(document)
+    toc_index = document.text.find(table_of_contents.text)
 
     # Get all the text after the table of contents
-    document.report_text = document.text[toc_index + len(document.toc):]
+    document.report_text = document.text[toc_index + len(table_of_contents.text):]
 
     parse_table_of_contents(document)
     extract_item_sections(document)
@@ -80,14 +80,14 @@ async def process(
                 "prev_chunk_id": getattr(item.prev_chunk, "id", None),
                 "next_chunk_id": getattr(item.next_chunk, "id", None),
             }
-            # embeddings = await embedding_model.create_embedding(item.text, strategy="mean")
+            embeddings = await embedding_model.create_embedding(item.text, strategy="mean")
             item_data = item.__dict__
             vo = VectorObject(
                 **document_data,
                 **links,
                 **item_data,
                 section=section,
-                embeddings=[],
+                embeddings=embeddings,
                 entity_type="Item"
             )
             vector_objects.append(vo)
@@ -97,14 +97,26 @@ async def process(
             "prev_chunk_id": getattr(part.prev_chunk, "id", None),
             "next_chunk_id": getattr(part.next_chunk, "id", None),
         }
-        # embeddings = await embedding_model.create_embedding(part.text, strategy="mean")
+        embeddings = await embedding_model.create_embedding(part.text, strategy="mean")
         part_data = part.__dict__
         vo = VectorObject(
             **document_data,
             **links,
             **part_data,
-            embeddings=[],
+            embeddings=embeddings,
             entity_type="Part"
+        )
+        vector_objects.append(vo)
+
+
+    for table in document.tables:
+        table_data = table.__dict__
+        embeddings = await embedding_model.create_embedding(table.text, strategy="mean")
+        vo = VectorObject(
+            **document_data,
+            **table_data,
+            embeddings=embeddings,
+            entity_type="Table"
         )
         vector_objects.append(vo)
 
@@ -129,7 +141,7 @@ async def process_filings():
         return
     
     # Iterate through each company directory
-    for company_name in os.listdir(base_dir):
+    for company_name in os.listdir(base_dir)[:2]:
         company_dir = os.path.join(base_dir, company_name)
         
         # Skip if not a directory
@@ -154,44 +166,52 @@ async def process_filings():
             filing_date: str
             _ticker, form_type, filing_date = parts # Ticker is unused as already collected as `company_name`
             
-            # Read the file content
-            file_path = os.path.join(company_dir, filename)
-            with open(file_path, 'r', encoding='utf-8') as f:
-                document_text = f.read()
-            
-            # Call the process function
-            vector_objects: List[VectorObject] = await process(document_text, company_name, form_type, filing_date, file_path)
-            all_vector_objects.extend(vector_objects)
-            logger.info(f"Processed {filename}")
+            try:
+                # Read the file content
+                file_path = os.path.join(company_dir, filename)
+                with open(file_path, 'r', encoding='utf-8') as f:
+                    document_text = f.read()
                 
+                # Call the process function
+                vector_objects: List[VectorObject] = await process(document_text, company_name, form_type, filing_date, file_path)
+                all_vector_objects.extend(vector_objects)
+                logger.info(f"Processed {filename}")
+            except Exception as e:
+                logger.error(f"ERROR: {e}")
 
-    collect(all_vector_objects)
-
-# TODO: This was implemented due to the Pinecone index size of 512. Alternative to PCA is UMAP 
-def collect(vector_objects: List["VectorObject"], target_dim: int = 512):
-    """Collect for PCA: reduce in-place, then upload."""
-    _reduce_dimensionality(vector_objects, target_dim=target_dim)
-    vector_db_client = VectorDB()
-
-    # TODO: clear the previous state of embeddings though only given PCA implementation
-    vector_db_client.clear()
-
-    for vector in vector_objects:
-        vector_db_client.upload(vector)
+    await collect(all_vector_objects)
 
 
-# TODO: PCA is typically only suited for single use fitting meaning ingesting new data may be difficult or unoptimal
-#       We are assuming as well the Dimensionality with always be larger than target Dim as well
-def _reduce_dimensionality(vector_objects: List[VectorObject], target_dim: int = 512, seed: int = 42) -> None:
-    X = np.asarray([v.embeddings for v in vector_objects], dtype=np.float32)
-    Z = PCA(n_components=target_dim, random_state=seed).fit_transform(X)
 
-    # L2-normalize to keep cosine geometry stable
-    Z = Z / (np.linalg.norm(Z, axis=1, keepdims=True) + 1e-9)
-
-    # Write back
+# TODO: This was implemented due to the Pinecone index size of 512. Alternative to PCA is UMAP  
+def train_pca_and_reduce_in_place(vector_objects: List["VectorObject"], pca: PCALoader) -> None:
+    logger.info("PCA FITTING")
+    X = [v.embeddings for v in vector_objects]
+    pca.fit(X).save()
+    Z = pca.transform(X)
     for obj, z in zip(vector_objects, Z):
         obj.embeddings = z.tolist()
+    logger.info("PCA COMPLETE")
+
+
+async def collect(vector_objects: List["VectorObject"], target_dim: int = 512, pca_path: str = "artifacts/sec_pca_512.joblib"):
+    """
+    Train once and persist (first run), or load and apply (subsequent runs),
+    then upload to VectorDB.
+    """
+    pca = PCALoader(path=pca_path, target_dim=target_dim, seed=42)
+
+
+    train_pca_and_reduce_in_place(vector_objects, pca)
+
+    vector_db_client = VectorDB()
+
+    for vector in vector_objects:
+        # ensure empty text fields are strings if needed
+        if getattr(vector, "text", None) is None:
+            vector.text = ""
+        vector_db_client.upload(vector)
+
 
 if __name__ == "__main__":
     asyncio.run(process_filings()) 

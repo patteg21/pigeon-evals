@@ -1,43 +1,63 @@
-from typing import List, Tuple
+from typing import List
 
 from uuid import uuid4
 import re
 
 
-from clients import EmbeddingModel
-
 from utils.typing import (
     SECDocument, 
     SECPart, 
-    SECItem
+    SECItem,
+    SECTable
 )
 
-def extract_toc(document: SECDocument):
-    tables = extract_tables(document)
+def _compute_page_number(body: str, pos: int) -> int:
+    """Pages start at 1; count [PAGE_BREAK] before `pos`."""
+    if pos < 0:
+        pos = 0
+    return body[:pos].count("[PAGE_BREAK]") + 1
+
+
+def extract_toc(document: SECDocument) -> SECTable:
+    tables: List[SECTable]= extract_tables(document)
     
-    table_of_contents = None
     filtered_tables: List[str] = []
 
 
     for table in tables:
-        if not table_of_contents and "Item 1." in table:
+        if "Item 1." in table.text:
             table_of_contents = table  # store the first TOC-like table
         else:
             filtered_tables.append(table)
 
     document.toc = table_of_contents
     document.tables = filtered_tables
+    return table_of_contents
 
 
 # TODO: Improve the naive search for table of contents
-def extract_tables(entity: SECDocument | SECItem | SECPart):
+TABLE_RE  = re.compile(r"\[TABLE_START\](.*?)\[[ ]*TABLE_END\]", re.DOTALL | re.IGNORECASE)
+def extract_tables(entity: SECDocument | SECItem | SECPart) -> List[SECTable]:
     """
+    Extract tables and attach a page number based on their position in `entity.text`.
+    """
+    body = getattr(entity, "text", "") or ""
+    tables: List[SECTable] = []
 
-    """
-    table_pattern = re.compile(r"\[TABLE_START\](.*?)\[[ ]*TABLE_END\]", re.DOTALL | re.IGNORECASE)
-    tables: List[str] = [t.strip() for t in table_pattern.findall(entity.text)]
+    for m in TABLE_RE.finditer(body):
+        # Page is computed at the start of the table block
+        start_pos = m.start()                 # start of [TABLE_START]
+        text = (m.group(1) or "").strip()     # inner table contents only
+        page = _compute_page_number(body, start_pos)
+
+        tables.append(SECTable(
+            id=uuid4().hex,
+            page_number=page,
+            text=text,
+        ))
 
     return tables
+
 
 
 
@@ -45,7 +65,7 @@ def extract_tables(entity: SECDocument | SECItem | SECPart):
 ROMAN_PART = re.compile(r"(PART\s+[IVXLCDM]+\.?)", re.IGNORECASE)
 ITEM_ROW   = re.compile(r"(Item\s+\d+[A-Z]?\.)\s*\|\s*(.*?)\s*\|\s*(\d+)", re.IGNORECASE)
 def parse_table_of_contents(document: SECDocument) -> None:
-    toc = document.toc
+    toc = document.toc.text
 
     # TODO: FIX THIS OCR ERROR
     toc = toc.replace("P | art | I", "Part I")
@@ -79,25 +99,18 @@ def parse_table_of_contents(document: SECDocument) -> None:
             for m in ITEM_ROW.finditer(body):
                 subsection = m.group(1).strip()   # "Item 1."
                 title = m.group(2).strip()        # "Financial Statements"
-                page = m.group(3).strip()         # "3"
+                _page = m.group(3).strip()         # "3"
 
                 sec_item = SECItem(
                     id=uuid4().hex,
                     title=title,
                     subsection=subsection,
-                    page=page,
                 )
                 sec_part.items.append(sec_item)
                 items.append(sec_item)
 
 
 
-
-def _compute_page_number(body: str, pos: int) -> int:
-    """Pages start at 1; count [PAGE_BREAK] before `pos`."""
-    if pos < 0:
-        pos = 0
-    return body[:pos].count("[PAGE_BREAK]") + 1
 
 
 def _compile_fuzzy(label: str) -> re.Pattern:

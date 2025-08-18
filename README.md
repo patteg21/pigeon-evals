@@ -33,11 +33,11 @@ python processsing.py
 uv run processsing.py
 ```
 
-One of the most central pieces to this implementation is the use of Typing and Pydantic models in order to ensure consistency when creating Data. The end goal of this is to flag `null` or `None` values in the processing pipelines. Additional this allows code to be easy to understand and reference back to at later points if needed. Since the Code is centered around objects there is a higher focus on telemetry throughout the data processing pipeline.
+One of the most central pieces to this implementation is the use of Typing and Pydantic models in order to ensure consistency when creating Data. The end goal of this is to flag `null` or `None` values in the processing pipelines. Additional this allows code to be easy to understand and reference back to at later points if needed. Since the Code is centered around objects there is a higher focus on telemetry throughout the data processing pipeline. We can understand the data integretity and parsing ability by utilizing Pydantics Type Checking. When the pydantic throws and error, we become aware of a processing aware that would otherwise be allowed.
 
 The Heirarchy of Objects Follows:
 ```bash
-[SECDocumnet]
+[SECDocumnet] -- [SECTable]
       |
       |
   [SECPart]
@@ -69,4 +69,12 @@ Visuals
     - Graph
         Params:
             Data (List[Dict]) 
+```
+
+## Tests
+
+```bash
+python tests/test_mcp.py
+python tests/test_table_visualization.py
+
 ```

@@ -1,8 +1,11 @@
 import os
 import asyncio
+
 from dotenv import load_dotenv
 from agents.mcp import MCPServerStdio
 from agents import Agent, Runner, set_default_openai_key
+
+from utils import logger
 
 load_dotenv()
 
@@ -26,9 +29,15 @@ async def run(server):
 		mcp_servers=[server],
 	)
 
+	# Test table visualization
+	table_message = "Create a table visualization with headers ['Company', 'Revenue', 'Profit'] and rows [['Apple', '$365B', '$95B'], ['Microsoft', '$198B', '$61B'], ['Google', '$282B', '$73B']] with title 'Tech Company Financials'"
+	logger.info("Testing table visualization...")
+	table_result = await Runner.run(starting_agent=agent, input=table_message)
+	logger.info("Table visualization result:", table_result.final_output)
+
 	message = "What is the most recent revenue reported by Apple?"
 	result = await Runner.run(starting_agent=agent, input=message)
-	print(result.final_output)
+	logger.info(result.final_output)
 
 	# TODO: Add more examples to showcase the capabilities of the system
 
@@ -37,10 +46,10 @@ async def test():
 		Defines the MCP server and runs the OpenAI Agent
 	"""
 	
-	# TODO: Modify the params in order to appropriately run your MCP server
+	# Set up MCP server parameters to run the main.py script
 	params = {
-		"command": "YOUR_COMMAND_HERE",
-		"args": ["YOUR_ARGUMENTS_HERE"]
+		"command": "python",
+		"args": ["main.py"]
 	}
 	async with MCPServerStdio(
 		params=params

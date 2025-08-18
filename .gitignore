@@ -12,3 +12,5 @@ logs.log
 *.log
 
 .outputs
+emb_cache/
+images/

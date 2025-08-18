@@ -1,4 +1,4 @@
-from typing import Optional, List
+from typing import Optional, List, Dict
 import re
 from datetime import datetime
 
@@ -9,24 +9,37 @@ from utils.typing.common import EntityType
 class VectorObject(BaseModel):
     id: str
     ticker: str
-    company: Optional[str] = None
     date: str
     year: Optional[int] = None # Year is autofilled based on Date
     form_type: str
     text: str
     page_number: int
-    section: str
-    title: str
     document_path: str
     entity_type: EntityType 
-    subsection: Optional[str] = None
     embeddings: List[float]
+
+    title: Optional[str] = None
+    section: Optional[str] = None
+    subsection: Optional[str] = None
+    company: Optional[str] = None
     prev_chunk_id: Optional[str] = None
     next_chunk_id: Optional[str] = None
     commission_number: Optional[str | None] = None
     period_end: Optional[str | None] = None
 
-    # TODO: Include / Inherit from the SECDocument Object so it can be unpacked directly
+
+    @property
+    def pinecone_metadata(self) -> Dict:
+        """ Meant for uploading this as metadata, drops all the None / Null Values"""
+        # exclude embeddings/id and drop None
+        meta = self.model_dump(exclude={'id', 'embeddings'}, exclude_none=True)
+        # Pinecone requires: str | number | bool | list[str]
+        for k, v in list(meta.items()):
+            if isinstance(v, (list, tuple, set)):
+                meta[k] = [str(x) for x in v if x is not None]
+            elif not isinstance(v, (str, int, float, bool)):
+                meta[k] = str(v)
+        return meta
 
  
     @field_validator('date')

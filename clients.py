@@ -3,18 +3,23 @@ import os
 
 import tiktoken
 import numpy as np
+import diskcache as dc
 from dotenv import load_dotenv
 from openai import AsyncOpenAI
 from pinecone import (
     Pinecone
 )
 
+
 from utils.typing import (
     VectorObject,
     Pooling,
+    EntityType
 )
 
 load_dotenv()
+
+cache = dc.Cache("./emb_cache")
 
 
 class EmbeddingModel:
@@ -147,6 +152,9 @@ class EmbeddingModel:
         Returns:
             List[float]: A single pooled embedding vector.
         """
+        if text in cache:
+            return cache[text]
+        
         total = await self.count_tokens(text)
         if not await self._is_too_large(total):
             vec = np.asarray(await self._embeddings(text), dtype=np.float32)
@@ -171,7 +179,10 @@ class EmbeddingModel:
         pooled = self._pool(vecs, strategy=strategy, weights=weights)
         if normalize_output:
             pooled = self._l2n(pooled)
-        return pooled.astype(np.float32).tolist()
+        out = pooled.astype(np.float32).tolist()
+
+        cache[text] = out
+        return out
     
 
 class VectorDB:
@@ -183,15 +194,44 @@ class VectorDB:
         """Retrieve a vector by its ID"""
         response = self.index.fetch(ids=[vector_id])
         return response.vectors.get(vector_id)
+    
+    
+    # TODO: Error Handles for non existent years 
+    def retrieve_by_metadata(
+        self,
+        vector: list[float],
+        *,
+        entity_type: EntityType | None = None,
+        ticker: str | None = None,
+        year: str | None = None,
+        top_k: int = 10
+    ):
+        """Search only vectors with metadata.entity_type == entity_type (and optional ticker)."""
+        
+        filt = {}
+        if entity_type:
+            filt["ticker"] = {"$eq": entity_type}
+        if ticker:
+            filt["ticker"] = {"$eq": ticker}
+        if year:
+            filt["year"] = {"$eq": year}
+
+        return self.index.query(
+            vector=vector,
+            top_k=top_k,
+            include_metadata=True,
+            filter=filt
+        )
+
 
     def upload(self, vector_object: VectorObject):
-        metadata: Dict = vector_object.model_dump(exclude={'id', 'embeddings'})
+        """Uploads a VectorObject"""
         
         # Prepare vector for upsert
         vector_data = {
             "id": vector_object.id,
             "values": vector_object.embeddings,
-            "metadata": metadata
+            "metadata": vector_object.pinecone_metadata
         }
         
         return self.index.upsert(vectors=[vector_data])

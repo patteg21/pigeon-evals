@@ -12,9 +12,9 @@ class SECDocument(BaseModel):
     date: str
     text: str
     path: str
-    report_text: Optional[str] = None # text that is after the TOC 
-    toc: Optional[str] = None 
-    tables: Optional[List[str]] = None 
+    report_text: Optional[str] = None   # text that is after the TOC 
+    toc: Optional["SECTable"] = None 
+    tables: Optional[List["SECTable"]] = [] 
     form_type: FormType
     period_end: Optional[str | None] = None
     commission_number: Optional[str | None] = None
@@ -36,7 +36,13 @@ class SECItem(BaseModel):
     text: Optional[str] = None # SECItems will throw Pydantic Error when added to VectorObject
     title: str
     subsection: str
-    page: str
     page_number: int = 0
     prev_chunk: Optional["SECPart | SECItem"] = None
     next_chunk: Optional["SECPart | SECItem"] = None
+
+
+class SECTable(BaseModel):
+    id: str
+    text: str
+    page_number: int
+
