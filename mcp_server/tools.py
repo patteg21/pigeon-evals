@@ -133,4 +133,3 @@ def init_mcp_tools(mcp: FastMCP):
         )
         return create_table_image(data)
 
-    
