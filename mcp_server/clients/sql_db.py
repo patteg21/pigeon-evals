@@ -27,29 +27,13 @@ class SQLClient:
             cursor.execute("""
                 CREATE TABLE IF NOT EXISTS documents (
                     id TEXT PRIMARY KEY,
-                    ticker TEXT NOT NULL,
-                    date TEXT NOT NULL,
-                    form_type TEXT NOT NULL,
-                    entity_type TEXT NOT NULL,
                     text TEXT NOT NULL,
-                    title TEXT,
-                    section TEXT,
-                    subsection TEXT,
-                    page_number INTEGER,
-                    document_path TEXT,
-                    commission_number TEXT,
-                    period_end TEXT,
-                    prev_chunk_id TEXT,
-                    next_chunk_id TEXT,
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                 )
             """)
             
             # Create indexes for faster retrieval
             cursor.execute("CREATE INDEX IF NOT EXISTS idx_documents_id ON documents(id)")
-            cursor.execute("CREATE INDEX IF NOT EXISTS idx_documents_ticker ON documents(ticker)")
-            cursor.execute("CREATE INDEX IF NOT EXISTS idx_documents_date ON documents(date)")
-            cursor.execute("CREATE INDEX IF NOT EXISTS idx_documents_entity_type ON documents(entity_type)")
             
             conn.commit()
     
@@ -73,28 +57,8 @@ class SQLClient:
                 cursor = conn.cursor()
                 
                 cursor.execute("""
-                    INSERT OR REPLACE INTO documents (
-                        id, ticker, date, form_type, entity_type, text,
-                        title, section, subsection, page_number, document_path,
-                        commission_number, period_end, prev_chunk_id, next_chunk_id
-                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                """, (
-                    doc_id,
-                    doc_data.get('ticker'),
-                    doc_data.get('date'),
-                    doc_data.get('form_type'),
-                    doc_data.get('entity_type'),
-                    doc_data.get('text'),
-                    doc_data.get('title'),
-                    doc_data.get('section'),
-                    doc_data.get('subsection'),
-                    doc_data.get('page_number'),
-                    doc_data.get('document_path'),
-                    doc_data.get('commission_number'),
-                    doc_data.get('period_end'),
-                    doc_data.get('prev_chunk_id'),
-                    doc_data.get('next_chunk_id')
-                ))
+                    INSERT OR REPLACE INTO documents (id, text) VALUES (?, ?)
+                """, (doc_id, doc_data.get('text')))
                 
                 conn.commit()
                 return True
@@ -134,46 +98,6 @@ class SQLClient:
         except Exception as e:
             raise SQLiteError(f"Failed to retrieve documents: {str(e)}")
     
-    def search_documents(
-        self, 
-        ticker: Optional[str] = None,
-        date: Optional[str] = None,
-        form_type: Optional[str] = None,
-        entity_type: Optional[str] = None,
-        limit: int = 100
-    ) -> List[Dict[str, Any]]:
-        """Search documents by metadata"""
-        try:
-            with self._get_connection() as conn:
-                cursor = conn.cursor()
-                
-                conditions = []
-                params = []
-                
-                if ticker:
-                    conditions.append("ticker = ?")
-                    params.append(ticker)
-                if date:
-                    conditions.append("date = ?")
-                    params.append(date)
-                if form_type:
-                    conditions.append("form_type = ?")
-                    params.append(form_type)
-                if entity_type:
-                    conditions.append("entity_type = ?")
-                    params.append(entity_type)
-                
-                where_clause = " WHERE " + " AND ".join(conditions) if conditions else ""
-                query = f"SELECT * FROM documents{where_clause} ORDER BY created_at DESC LIMIT ?"
-                params.append(limit)
-                
-                cursor.execute(query, params)
-                rows = cursor.fetchall()
-                
-                return [dict(row) for row in rows]
-                
-        except Exception as e:
-            raise SQLiteError(f"Failed to search documents: {str(e)}")
     
     def delete_document(self, doc_id: str) -> bool:
         """Delete document by ID"""

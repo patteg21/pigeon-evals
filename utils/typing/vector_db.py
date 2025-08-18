@@ -26,13 +26,14 @@ class VectorObject(BaseModel):
     next_chunk_id: Optional[str] = None
     commission_number: Optional[str | None] = None
     period_end: Optional[str | None] = None
+    document_id: Optional[str] = None  # Reference to SQLite document ID for text retrieval
 
 
     @property
     def pinecone_metadata(self) -> Dict:
         """ Meant for uploading this as metadata, drops all the None / Null Values"""
         # exclude embeddings/id and drop None
-        meta = self.model_dump(exclude={'id', 'embeddings'}, exclude_none=True)
+        meta = self.model_dump(exclude={'id', 'embeddings', 'text'}, exclude_none=True)
         # Pinecone requires: str | number | bool | list[str]
         for k, v in list(meta.items()):
             if isinstance(v, (list, tuple, set)):

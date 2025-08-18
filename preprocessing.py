@@ -6,7 +6,7 @@ import asyncio
 import json
 import re
 
-from mcp_server.clients import VectorDB, EmbeddingModel
+from mcp_server.clients import VectorDB, EmbeddingModel, SQLClient
 from utils.typing import (
     VectorObject,
     SECDocument,
@@ -88,6 +88,14 @@ async def _chunk_by_page_and_max_tokens(item: SECItem, embedding_model: Embeddin
     return results
 
 
+def _store_text_in_sqlite(sql_client: SQLClient, text_content: str) -> str:
+    """Store text content in SQLite and return document ID"""
+    doc_id = uuid4().hex
+    doc_data = {'text': text_content}
+    sql_client.store_document(doc_id, doc_data)
+    return doc_id
+
+
 
 async def process(
         document_text: str, 
@@ -105,8 +113,9 @@ async def process(
         file_path (str): The file path
     """    
 
-    # initialize embedding client
+    # initialize clients
     embedding_model = EmbeddingModel()
+    sql_client = SQLClient()
 
     document = SECDocument(
         id=uuid4().hex,
@@ -153,8 +162,13 @@ async def process(
                 # TODO: handles very large files and chunks them due to metadata limitation 
                 split_sec_items: List[SECItem] = await _chunk_by_page_and_max_tokens(item, embedding_model) 
                 for split in split_sec_items: 
-                    item_data = split.__dict__
+                    item_data = split.__dict__.copy()
                     embeddings = await embedding_model.create_embedding(split.text, strategy="mean")
+
+                    # Store text in SQLite and get document ID
+                    doc_id = _store_text_in_sqlite(sql_client, split.text)
+                    item_data['text'] = ""  # Clear text from vector metadata
+                    item_data['document_id'] = doc_id
 
                     links = {
                         "prev_chunk_id": getattr(item.prev_chunk, "id", None),
@@ -171,7 +185,13 @@ async def process(
                     vector_objects.append(vo)
             else:
                 embeddings = await embedding_model.create_embedding(item.text, strategy="mean")
-                item_data = item.__dict__
+                item_data = item.__dict__.copy()
+                
+                # Store text in SQLite and get document ID
+                doc_id = _store_text_in_sqlite(sql_client, item.text)
+                item_data['text'] = ""  # Clear text from vector metadata
+                item_data['document_id'] = doc_id
+                
                 vo = VectorObject(
                     **document_data,
                     **links,
@@ -188,7 +208,13 @@ async def process(
             "next_chunk_id": getattr(part.next_chunk, "id", None),
         }
         embeddings = await embedding_model.create_embedding(part.text, strategy="mean")
-        part_data = part.__dict__
+        part_data = part.__dict__.copy()
+        
+        # Store text in SQLite and get document ID
+        doc_id = _store_text_in_sqlite(sql_client, part.text)
+        part_data['text'] = ""  # Clear text from vector metadata
+        part_data['document_id'] = doc_id
+        
         vo = VectorObject(
             **document_data,
             **links,
@@ -200,8 +226,14 @@ async def process(
 
 
     for table in document.tables:
-        table_data = table.__dict__
+        table_data = table.__dict__.copy()
         embeddings = await embedding_model.create_embedding(table.text, strategy="mean")
+        
+        # Store text in SQLite and get document ID
+        doc_id = _store_text_in_sqlite(sql_client, table.text)
+        table_data['text'] = ""  # Clear text from vector metadata
+        table_data['document_id'] = doc_id
+        
         vo = VectorObject(
             **document_data,
             **table_data,
@@ -232,7 +264,7 @@ async def process_filings():
         return
     
     # Iterate through each company directory
-    for company_name in os.listdir(base_dir)[:2]:
+    for company_name in os.listdir(base_dir):
         company_dir = os.path.join(base_dir, company_name)
         
         # Skip if not a directory
@@ -296,6 +328,10 @@ async def collect(vector_objects: List["VectorObject"], target_dim: int = 512, p
     train_pca_and_reduce_in_place(vector_objects, pca)
 
     vector_db_client = VectorDB()
+    try: 
+        vector_db_client.clear()
+    except Exception as e:
+        logger.error(f"Unable to Clear Pinecone DB: {e}")
 
     for vector in vector_objects:
         # ensure empty text fields are strings if needed

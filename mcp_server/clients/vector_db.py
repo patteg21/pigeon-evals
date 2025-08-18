@@ -73,9 +73,6 @@ class VectorDB:
         return vector
     
     
-    def get_unique_values():
-        pass
-    
     def retrieve_by_metadata(
         self,
         vector: list[float],
@@ -138,12 +135,7 @@ class VectorDB:
             
         if not isinstance(vector_object.embeddings, list):
             raise MetadataFieldError("embeddings", "embeddings must be a list of floats")
-        
-        required_fields = ["ticker", "date", "form_type", "text", "entity_type"]
-        for field in required_fields:
-            if not getattr(vector_object, field, None):
-                raise MetadataFieldError(field, f"VectorObject must have a valid {field}")
-        
+
         try:
             # Prepare vector for upsert
             vector_data = {

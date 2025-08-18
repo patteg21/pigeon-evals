@@ -1,20 +1,20 @@
 import numpy as np
 from mcp.server.fastmcp import FastMCP
 
-from mcp_server.clients import VectorDB, EmbeddingModel
+from mcp_server.clients import VectorDB, EmbeddingModel, SQLClient
 
 from utils import logger
 from utils.pca import PCALoader
 from utils.typing import (
     EntityType,
     TableImageData,
-    PineconeResponse
 )
 from mcp_server.visuals.table import create_table_image
 
 def init_mcp_tools(mcp: FastMCP):
     vector_db_client: VectorDB = VectorDB()
     embedding_model: EmbeddingModel = EmbeddingModel()
+    sql_client: SQLClient = SQLClient()
 
     reducer: PCALoader | None = None
     try:
@@ -31,6 +31,22 @@ def init_mcp_tools(mcp: FastMCP):
         v = v / (np.linalg.norm(v) + 1e-9)
         return v.tolist()
 
+    def _enrich_with_text(response):
+        """Enrich search results with text content from SQLite"""
+        if hasattr(response, 'matches'):
+            for match in response.matches:
+                metadata = match.get('metadata', {})
+                document_id = metadata.get('document_id')
+                if document_id:
+                    try:
+                        doc = sql_client.retrieve_document(document_id)
+                        if doc:
+                            metadata['text'] = doc['text']
+                    except Exception as e:
+                        logger.error(f"Failed to retrieve text for document {document_id}: {e}")
+                        metadata['text'] = ""
+        return response
+
 
     logger.info("Adding Tools to MCP Server...")
 
@@ -42,7 +58,8 @@ def init_mcp_tools(mcp: FastMCP):
         try:
             vec = await embedding_model.create_embedding(query)
             vec = _reduce(vec)
-            response: PineconeResponse = vector_db_client.query(vec, top_k=10, include_metadata=True)
+            response = vector_db_client.query(vec, top_k=10, include_metadata=True)
+            response = _enrich_with_text(response)
             return response
         except Exception as e:
             logger.error(f"Error in vector_search: {e}")
@@ -58,7 +75,8 @@ def init_mcp_tools(mcp: FastMCP):
         ):
         try:
             vector = await embedding_model.create_embedding(query)
-            response: PineconeResponse = vector_db_client.retrieve_by_metadata(vector, entity_type=entity_type, year=year, ticker=ticker)
+            response = vector_db_client.retrieve_by_metadata(vector, entity_type=entity_type, year=year, ticker=ticker)
+            response = _enrich_with_text(response)
             return response
         except Exception as e:
             logger.error(f"Error in search_on_metadata: {e}")
@@ -69,11 +87,22 @@ def init_mcp_tools(mcp: FastMCP):
     def search_by_id(vector_id: str):
         """This is meant for the Agent to Be able to Chain and `scroll` by content proximity"""
         try:
-            response: PineconeResponse = vector_db_client.retrieve_from_id(vector_id=vector_id)
+            response = vector_db_client.retrieve_from_id(vector_id=vector_id)
+            # For single vector retrieval, we need to handle differently
+            if response and hasattr(response, 'metadata'):
+                document_id = response.metadata.get('document_id')
+                if document_id:
+                    try:
+                        doc = sql_client.retrieve_document(document_id)
+                        if doc:
+                            response.metadata['text'] = doc['text']
+                    except Exception as e:
+                        logger.error(f"Failed to retrieve text for document {document_id}: {e}")
+                        response.metadata['text'] = ""
             return response
         except Exception as e:
             logger.error(f"Error in search_by_id: {e}")
-            return {"error": str(e), "matches": []}
+            return {"error": str(e)}
 
 
     @mcp.tool()
