@@ -1,22 +1,19 @@
-from typing import List, Dict, Literal, Tuple
+from typing import List
 from pathlib import Path
 from uuid import uuid4
 import os
 import asyncio
-import re
-import json
 
 from clients import VectorDB, EmbeddingModel
 
 from utils.typing import (
     VectorObject,
-    SECDocument, 
-    SECPart, 
-    SECItem
+    SECDocument
 )
+from utils import logger
 
-from processing.extraction import extract_tables, extract_toc, parse_table_of_contents, extract_item_sections
-from processing.metadata import get_sec_metadata
+from preprocessing.extraction import extract_toc, parse_table_of_contents, extract_item_sections
+from preprocessing.metadata import get_sec_metadata
 
 async def process(
         document_text: str, 
@@ -39,6 +36,7 @@ async def process(
     embedding_model = EmbeddingModel()
 
     document = SECDocument(
+        id=uuid4().hex,
         ticker=company_name,
         date=filing_date,
         text=document_text,
@@ -56,58 +54,9 @@ async def process(
     parse_table_of_contents(document)
     extract_item_sections(document)
     
-
-    TABLE_BLOCK_RE = re.compile(r"\[TABLE_START\].*?\[TABLE_END\]", re.DOTALL)
-
     all_vector_objects: List[VectorObject] = []
-    for part in document.parts:
-        # For the Preface
-        
-        vec_obj = VectorObject(
-            id=uuid4().hex,
-            ticker=document.ticker,
-            date=document.date,
-            commission_number=document.commission_number,
-            period_end=document.period_end,
-            document_path=document.path,
-            embeddings=[],
-            text=part.preface,
-            chunk_type="preface",
-        )
-
-        all_vector_objects.append(vec_obj)
-
-        for item in part.items:
-            # Get current text safely
-            text: str = item.text
-
-            tokens = embedding_model.count_tokens(text)
-            if tokens > 8191:
-                # INLINE removal of tables
-                cleaned = TABLE_BLOCK_RE.sub("", text).strip()
-                item.text = cleaned  # update in place
-
-                # optional re-check
-                new_tokens = embedding_model.count_tokens(item.text)
-                if new_tokens > 8191:
-                    
-                    # A naive break by page
-                    pages = item.text.split("[PAGE BREAK]")
-
-                    for page in pages:
-                        new_tokens = embedding_model.count_tokens(page)
-                        if new_tokens > 8191:
-                            print(f"still too big -- {document.path} -- ({new_tokens} tokens) -> {getattr(item, 'title', 'unknown item')}")
-        
-                        
 
 
-
-    # Write result to JSON file
-    Path("outputs").mkdir(exist_ok=True)
-    output_filename = f"outputs/{company_name}_{filing_date}.json"
-    with open(output_filename, "w") as f:
-        f.write(document.model_dump_json(indent=4))
 
 async def process_filings():
     """
@@ -117,7 +66,7 @@ async def process_filings():
     
     # Check if the directory exists
     if not os.path.exists(base_dir):
-        print(f"Error: {base_dir} directory not found.")
+        logger.error(f"Error: {base_dir} directory not found.")
         return
     
     # Iterate through each company directory
@@ -128,7 +77,7 @@ async def process_filings():
         if not os.path.isdir(company_dir):
             continue
             
-        # print(f"\nProcessing filings for {company_name}...")
+        logger.info(f"\nProcessing filings for {company_name}...")
         
         # Iterate through each file in the company directory
         for filename in os.listdir(company_dir):
@@ -139,13 +88,12 @@ async def process_filings():
             # Format: {ticker}_{file_type}_{date}.txt
             parts = filename.replace('.txt', '').split('_')
             if len(parts) != 3:
-                print(f"Warning: Skipping {filename} - invalid filename format")
+                logger.warning(f"Warning: Skipping {filename} - invalid filename format")
                 continue
             
-            ticker: str
             form_type: str
             filing_date: str
-            ticker, form_type, filing_date = parts
+            _ticker, form_type, filing_date = parts # Ticker is unused as already collected as `company_name`
             
             # Read the file content
             file_path = os.path.join(company_dir, filename)
@@ -155,10 +103,11 @@ async def process_filings():
                 
                 # Call the process function
                 await process(document_text, company_name, form_type, filing_date, file_path)
-                # print(f"Processed {filename}")
+                logger.info(f"Processed {filename}")
                 
             except Exception as e:
-                print(f"Error processing {filename}: {str(e)}")
+                logger.info(f"Error processing {filename}: {str(e)}")
+
 
 
 if __name__ == "__main__":

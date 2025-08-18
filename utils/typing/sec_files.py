@@ -26,12 +26,16 @@ class SECPart(BaseModel):
     title: str
     preface: str
     section: str
-    page: Optional[int] = None
     items: List["SECItem"] = []
+    page_number: int = 0
+    prev_chunk: Optional["SECPart | SECItem"] = None
+    next_chunk: Optional["SECPart | SECItem"] = None
 
 class SECItem(BaseModel):
     text: Optional[str] = None
     title: str
-    page: Optional[int] = None
     subsection: str
     page: str
+    page_number: int = 0
+    prev_chunk: Optional["SECPart | SECItem"] = None
+    next_chunk: Optional["SECPart | SECItem"] = None

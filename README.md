@@ -52,10 +52,11 @@ Metdata:
 ```bash
 SECPart
     - Section
-    - Page
+    - Page Number 
 
 SECItem
     - Page
+    - Page Number 
     - Subsection
 ```
 Since these objects are essenitally a linked list, we have traceability throughout the heirarchy to any other metadata on a document / SECDocumnet.
