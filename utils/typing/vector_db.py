@@ -7,19 +7,22 @@ from pydantic import BaseModel, field_validator
 class VectorObject(BaseModel):
     id: str
     ticker: str
-    company: Optional[str]
+    company: Optional[str] = None
     date: str
     year: int
     form_type: str
-    orginal_documnet: Optional[str]
-    document_path: Optional[str]
-    embeddings: List[float]
     text: str
-    chunk_type: Optional[str]
-    section: str
+    orginal_documnet: Optional[str] = None
+    document_path: Optional[str] = None
+    embeddings: List[float]
+    chunk_type: Optional[str] = None
 
     # TODO: Potential add in a Linked List like system to store the previous context
+    #       Include / Inherit from the SECDocument Object so it can be unpacked directly
 
+    commission_number: Optional[str | None] = None
+    period_end: Optional[str | None] = None
+ 
     @field_validator('date')
     @classmethod
     def validate_date(cls, v: str) -> str:

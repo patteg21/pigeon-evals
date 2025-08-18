@@ -24,14 +24,15 @@ async def process(
         file_path: str
     ):
     """
-    
     Args:
         document_text (str): The processed text content of the filing
         company_name (str): The company ticker symbol
         form_type (str): The type of filing (10K or 10Q)
         filing_date (str): The filing date in YYYY-MM-DD format
         file_path (str): The file path
-    """    # initialize clients
+    """    
+
+    # initialize clients
     vector_db_client = VectorDB()
     embedding_model = EmbeddingModel()
 
@@ -44,7 +45,7 @@ async def process(
     )
 
     get_sec_metadata(document, form_type)
-    extract_tables(document)
+    extract_toc(document)
     toc_index = document.text.find(document.toc)
 
     # Get all the text after the table of contents
@@ -53,13 +54,60 @@ async def process(
     parse_table_of_contents(document)
     extract_item_sections(document)
     
-    
-    
+
+    TABLE_BLOCK_RE = re.compile(r"\[TABLE_START\].*?\[TABLE_END\]", re.DOTALL)
+
+    all_vector_objects: List[VectorObject] = []
+    for part in document.parts:
+        # For the Preface
+        vec_obj = VectorObject(
+            id=uuid4().hex,
+            ticker=document.ticker,
+            date=document.date,
+            commission_number=document.commission_number,
+            period_end=document.period_end,
+            document_path=document.path,
+            embeddings=[],
+            text=part.preface,
+            chunk_type="preface",
+        )
+        
+        all_vector_objects.append(vec_obj)
+
+        for item in part.items:
+            # Get current text safely
+            text: str = item.text
+
+            tokens = embedding_model.count_tokens(text)
+            if tokens > 8191:
+                # INLINE removal of tables
+                cleaned = TABLE_BLOCK_RE.sub("", text).strip()
+                item.text = cleaned  # update in place
+
+                # optional re-check
+                new_tokens = embedding_model.count_tokens(item.text)
+                if new_tokens > 8191:
+                    
+                    # A naive break by page
+                    pages = item.text.split("[PAGE BREAK]")
+
+                    for page in pages:
+                        new_tokens = embedding_model.count_tokens(page)
+                        if new_tokens > 8191:
+                            print(f"still too big -- {document.path} -- ({new_tokens} tokens) -> {getattr(item, 'title', 'unknown item')}")
+        
+                        
+
+
+
     # Write result to JSON file
     Path("outputs").mkdir(exist_ok=True)
     output_filename = f"outputs/{company_name}_{filing_date}.json"
     with open(output_filename, "w") as f:
         f.write(document.model_dump_json(indent=4))
+
+
+    
 
 
 
@@ -116,11 +164,6 @@ async def process_filings():
                 print(f"Error processing {filename}: {str(e)}")
 
 
-def split_at_table_of_contents(text: str) -> str:
-    """Split document at 'TABLE OF CONTENTS' and return everything after."""
-    toc_match = re.search(r"TABLE OF CONTENTS", text, re.IGNORECASE)
-    return text[toc_match.end():] if toc_match else text
-
 
 # TODO: Get more metadata such as the various Q&A
 def get_sec_metadata(document: SECDocument, form_type: Literal["10K", "10Q"]) -> Dict[str, str]:
@@ -152,14 +195,9 @@ def get_sec_metadata(document: SECDocument, form_type: Literal["10K", "10Q"]) ->
 
 
 
-# TODO: Improve the naive search for table of contents
-def extract_tables(document: SECDocument):
-    """
-
-    """
-    table_pattern = re.compile(r"\[TABLE_START\](.*?)\[[ ]*TABLE_END\]", re.DOTALL | re.IGNORECASE)
-    tables: List[str] = [t.strip() for t in table_pattern.findall(document.text)]
-
+def extract_toc(document: SECDocument):
+    tables = extract_tables(document)
+    
     table_of_contents = None
     filtered_tables: List[str] = []
 
@@ -172,6 +210,16 @@ def extract_tables(document: SECDocument):
 
     document.toc = table_of_contents
     document.tables = filtered_tables
+
+# TODO: Improve the naive search for table of contents
+def extract_tables(entity: SECDocument | SECItem | SECPart):
+    """
+
+    """
+    table_pattern = re.compile(r"\[TABLE_START\](.*?)\[[ ]*TABLE_END\]", re.DOTALL | re.IGNORECASE)
+    tables: List[str] = [t.strip() for t in table_pattern.findall(entity.text)]
+
+    return tables
 
 
 
