@@ -1,12 +1,12 @@
-import asyncio
 import os
+import pytest
 
 from mcp_server.visuals.table import create_table_image
 from utils.typing import TableImageData
 from utils import logger
 
 
-async def test_table_visualization():
+def test_table_visualization():
     """Test the table visualization function directly"""
     
     # Create test data
@@ -46,5 +46,3 @@ async def test_table_visualization():
         logger.info("✗ Second image file not found")
 
 
-if __name__ == "__main__":
-    asyncio.run(test_table_visualization())

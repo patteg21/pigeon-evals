@@ -1,5 +1,5 @@
 import os
-import asyncio
+import pytest
 
 from dotenv import load_dotenv
 from agents.mcp import MCPServerStdio
@@ -41,7 +41,8 @@ async def run(server):
 
 	# TODO: Add more examples to showcase the capabilities of the system
 
-async def test():
+@pytest.mark.asyncio
+async def test_mcp_server():
 	"""
 		Defines the MCP server and runs the OpenAI Agent
 	"""
@@ -55,5 +56,3 @@ async def test():
 		params=params
 	) as server:
 		await run(server)
-
-asyncio.run(test())

@@ -74,7 +74,11 @@ Visuals
 ## Tests
 
 ```bash
-python tests/test_mcp.py
-python tests/test_table_visualization.py
+# Run all tests
+python -m pytest tests/ -v
 
+# Individual test files
+python -m pytest tests/test_mcp.py -v
+python -m pytest tests/test_table_visualization.py -v
+python -m pytest tests/test_pca_loader.py -v
 ```

@@ -67,7 +67,7 @@ ITEM_ROW   = re.compile(r"(Item\s+\d+[A-Z]?\.)\s*\|\s*(.*?)\s*\|\s*(\d+)", re.IG
 def parse_table_of_contents(document: SECDocument) -> None:
     toc = document.toc.text
 
-    # TODO: FIX THIS OCR ERROR
+    # TODO: FIX The OCR or handle with REGEX 
     toc = toc.replace("P | art | I", "Part I")
     toc = toc.replace("P | art | II", "Part II")
     toc = toc.replace("P | art | III", "Part III")

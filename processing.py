@@ -4,12 +4,14 @@ from uuid import uuid4
 import os
 import asyncio
 import json
+import re
 
 from clients import VectorDB, EmbeddingModel
 from utils.typing import (
     VectorObject,
     SECDocument,
-    SECTable
+    SECTable,
+    SECItem
 )
 from utils import logger
 from utils.pca import PCALoader
@@ -17,7 +19,79 @@ from utils.pca import PCALoader
 from preprocessing.extraction import extract_toc, parse_table_of_contents, extract_item_sections
 from preprocessing.metadata import get_sec_metadata
 
-# TODO: Add in args for various different functionality
+
+import re
+from uuid import uuid4
+from typing import List
+
+def _chunk_by_page_and_max_tokens(item: SECItem, embedding_model: EmbeddingModel) -> List[SECItem]:
+    max_tokens = embedding_model.max_tokens
+    overlap = 128
+
+    # split into pages
+    pages: List[str] = [p.strip() for p in item.text.split("[PAGE BREAK]") if p.strip()]
+    
+    chunks, cur_text, cur_start_page = [], "", item.page_number
+
+    # pack into chunks across multiple pages
+    for offset, page in enumerate(pages):
+        candidate = (cur_text + " " + page).strip()
+        if embedding_model.count_tokens(candidate) <= max_tokens:
+            # safe to keep accumulating
+            if not cur_text:
+                cur_start_page = item.page_number + offset
+            cur_text = candidate
+        else:
+            if cur_text:
+                chunks.append((cur_text.strip(), cur_start_page))
+            # start new chunk from this page
+            cur_text = page
+            cur_start_page = item.page_number + offset
+    if cur_text:
+        chunks.append((cur_text.strip(), cur_start_page))
+
+    # add overlap
+    overlapped = []
+    for i, (chunk, start_page) in enumerate(chunks):
+        if i > 0:
+            prev_tokens = re.findall(r"\S+", chunks[i-1][0])
+            overlap_tokens = prev_tokens[-overlap:]
+            chunk = " ".join(overlap_tokens) + " " + chunk
+        overlapped.append((chunk.strip(), start_page))
+
+    # build new SECItems
+    results: List[SECItem] = []
+    for i, (txt, start_page) in enumerate(overlapped):
+        sec = SECItem(
+            id=uuid4().hex,
+            text=txt,
+            title=item.title,
+            subsection=item.subsection,
+            page_number=start_page,   # starting page number of this chunk
+            prev_chunk=None,
+            next_chunk=None,
+        )
+        results.append(sec)
+
+    # wire up prev/next
+    for i, sec in enumerate(results):
+        if i == 0:
+            sec.prev_chunk = item.prev_chunk
+        else:
+            sec.prev_chunk = results[i-1].id
+        if i == len(results) - 1:
+            sec.next_chunk = item.next_chunk
+        else:
+            sec.next_chunk = results[i+1]
+
+    # updates the pre-exisiting 
+    if item.prev_chunk:
+        item.prev_chunk.next_chunk = results[0].id
+    if item.next_chunk:
+        item.next_chunk.prev_chunk = results[-1].id
+    
+    return results
+
 
 
 async def process(
@@ -58,8 +132,7 @@ async def process(
     parse_table_of_contents(document)
     extract_item_sections(document)
     
-    # TODO: Handle Tables Individually + Better Chunking
-
+    # TODO: Refactor into more composible code
     # basic data from SECDocument to be shared across all items
     document_data = {
         "ticker" : document.ticker,
@@ -81,16 +154,36 @@ async def process(
                 "next_chunk_id": getattr(item.next_chunk, "id", None),
             }
             embeddings = await embedding_model.create_embedding(item.text, strategy="mean")
-            item_data = item.__dict__
-            vo = VectorObject(
-                **document_data,
-                **links,
-                **item_data,
-                section=section,
-                embeddings=embeddings,
-                entity_type="Item"
-            )
-            vector_objects.append(vo)
+            if embedding_model.count_tokens(item.text) > embedding_model.max_tokens:
+                # TODO: handles very large files and chunks them due to metadata limitation 
+                split_sec_items: List[SECItem] = _chunk_by_page_and_max_tokens(item, embedding_model) 
+                for split in split_sec_items: 
+                    item_data = split.__dict__
+                    links = {
+                        "prev_chunk_id": getattr(item.prev_chunk, "id", None),
+                        "next_chunk_id": getattr(item.next_chunk, "id", None),
+                    }
+                    vo = VectorObject(
+                        **document_data,
+                        **links,
+                        **item_data,
+                        section=section,
+                        embeddings=embeddings,
+                        entity_type="Item"
+                    )
+                    vector_objects.append(vo)
+            else:
+                item_data = item.__dict__
+
+                vo = VectorObject(
+                    **document_data,
+                    **links,
+                    **item_data,
+                    section=section,
+                    embeddings=embeddings,
+                    entity_type="Item"
+                )
+                vector_objects.append(vo)
 
         # Create a vector Object for each Part
         links = {
