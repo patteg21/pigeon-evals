@@ -5,3 +5,4 @@
 !.env.example
 outputs/
 data/
+**/__pycache__/**
