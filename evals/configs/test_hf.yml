@@ -1,7 +1,6 @@
 task: sample_huggingface
 dataset_path: "data/"
-sec_metadata: ["commission_number"]
-processors: ["tables", "breaks", "toc"]
+processors: ["tables", "breaks"]
 embedding: 
   provider: "huggingface"
   model: "sentence-transformers/all-roberta-large-v1"  # all-MiniLM-L6-v2 | all-mpnet-base-v2
@@ -13,15 +12,14 @@ embedding:
 
 storage: 
   text_store: "sqlite"
-  sqlite_path: "data/chunks_hf.db"
-  upload: true
-  clear: true
-  vector_db:
-    index_name: "sec-embeddings-hf"
-  outputs: ["objects"]
+  vector:
+    upload: false
+    clear: false
+    index: "sec-embedding"
+  outputs: ["chunks", "documents"]
 
 report:
-  output_path: "evals/reports/sample_hf"
+  output_path: "evals/reports/sample"
 
 generator: {provider: "openai", model: "gpt-4o-mini"}
 judge:

@@ -34,11 +34,7 @@ class Storage(BaseModel):
     vector_db: Optional[Dict[str, Any]] = Field(None, description="Vector database configuration")
     outputs: List[Literal["chunks", "documents"]] = Field(default_factory=list, description="Output types to store")
 
-
-class Report(BaseModel):
-    output_path: str = Field(..., description="Path for report outputs")
-
-
+\
 class Generator(BaseModel):
     provider: str = Field(..., description="Generator provider")
     model: str = Field(..., description="Generator model name")
@@ -67,7 +63,6 @@ class Config(BaseModel):
     processors: List[str] = Field(default_factory=list, description="List of processors to use")
     embedding: Optional[Embedding] = Field(None, description="Embedding configuration")
     storage: Optional[Storage] = Field(None, description="Storage configuration")
-    report: Optional[Report] = Field(None, description="Report configuration")
     generator: Optional[Generator] = Field(None, description="Generator configuration")
     judge: Optional[Judge] = Field(None, description="Judge configuration")
     retrival: Optional[Retrieval] = Field(None, description="Retrieval configuration")

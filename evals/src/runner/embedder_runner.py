@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Tuple
 import asyncio
 import concurrent.futures
 from utils import logger
@@ -63,25 +63,73 @@ class EmbedderRunner:
         
         logger.info(f"Processing {len(chunks)} chunks across {len(chunk_batches)} threads (max_workers={max_workers})")
         
-        # Create tasks for concurrent processing
+        # Create tasks for concurrent processing - get RAW embeddings only
         tasks = []
         for batch in chunk_batches:
             if batch:  # Only create task if batch is not empty
-                task = self._process_chunk_batch(batch, embedding_config)
+                task = self._process_chunk_batch_raw(batch, embedding_config)
                 tasks.append(task)
         
-        # Run all tasks concurrently
+        # Run all tasks concurrently to get raw embeddings
         batch_results = await asyncio.gather(*tasks, return_exceptions=True)
         
-        # Collect and flatten results
-        embedded_chunks = []
+        # Collect and flatten raw embeddings with their chunk info
+        all_raw_embeddings = []
+        chunks_in_order = []
         for result in batch_results:
             if isinstance(result, Exception):
                 logger.error(f"Thread failed with error: {result}")
                 raise result
-            embedded_chunks.extend(result)
+            for chunk, raw_embedding in result:
+                chunks_in_order.append(chunk)
+                all_raw_embeddings.append(raw_embedding)
+        
+        # Now apply PCA once on ALL raw embeddings if configured
+        provider = embedding_config.provider
+        embedder_class = self.embedder_map[provider]
+        embedder = embedder_class(embedding_config.model_dump())
+        
+        if embedder.reducer:
+            logger.info(f"Applying {embedder.reducer.name} dimensional reduction to all {len(all_raw_embeddings)} embeddings")
+            # Train PCA on ALL raw embeddings, then transform them
+            reduced_embeddings = embedder.reducer.fit_transform(all_raw_embeddings)
+            # Save trained PCA model to disk for later use
+            embedder.reducer.save()
+        else:
+            reduced_embeddings = all_raw_embeddings
+        
+        # Create embedded chunks with the processed embeddings
+        embedded_chunks = []
+        for chunk, embedding in zip(chunks_in_order, reduced_embeddings):
+            embedded_chunk = DocumentChunk(
+                id=chunk.id,
+                text=chunk.text,
+                type_chunk=chunk.type_chunk,
+                document=chunk.document,
+                embeddding=embedding  # Note: keeping original typo for compatibility
+            )
+            embedded_chunks.append(embedded_chunk)
         
         return embedded_chunks
+    
+    async def _process_chunk_batch_raw(self, chunk_batch: List[DocumentChunk], embedding_config: Embedding) -> List[Tuple[DocumentChunk, List[float]]]:
+        """Process a batch of chunks in a single thread, returning raw embeddings only."""
+        try:
+            provider = embedding_config.provider
+            embedder_class = self.embedder_map[provider]
+            embedder: OpenAIEmbedder | HuggingFaceEmbedder = embedder_class(embedding_config.model_dump())
+            
+            logger.debug(f"Thread processing {len(chunk_batch)} chunks for raw embeddings")
+            
+            # Get raw embeddings without PCA reduction
+            raw_embeddings = await embedder._embed_chunks_raw(chunk_batch)
+            
+            # Return pairs of (chunk, raw_embedding)
+            return list(zip(chunk_batch, raw_embeddings))
+            
+        except Exception as e:
+            logger.error(f"Error processing chunk batch: {e}")
+            raise
     
     async def _process_chunk_batch(self, chunk_batch: List[DocumentChunk], embedding_config: Embedding) -> List[DocumentChunk]:
         """Process a batch of chunks in a single thread."""

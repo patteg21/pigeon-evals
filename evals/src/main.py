@@ -44,7 +44,6 @@ async def main():
             logger.info(f"  Task: {config.task}")
             logger.info(f"  Dataset Path: {config.dataset_path}")
             logger.info(f"  Processors: {config.processors}")
-            logger.info(f"  Output Path: {config.report.output_path if config.report else 'Not configured'}")
             
         # Load documents using DataLoader
         dataset_path = config.dataset_path

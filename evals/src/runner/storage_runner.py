@@ -14,6 +14,18 @@ class StorageRunner:
     def __init__(self):
         self.vector_db = None
         self.sql_client = None
+        
+        self.storage_map = {
+            "vector": {
+                "pinecone"
+            },
+            "text" : {
+                "sqlite"
+            },
+            "file" : {
+                "local"
+            }
+        }
     
     async def run_storage(
             self, 

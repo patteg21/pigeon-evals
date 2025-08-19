@@ -1,7 +1,14 @@
 from abc import ABC, abstractmethod
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Iterable
+import asyncio
+import time
+import numpy as np
+import diskcache as dc
 from utils.typing.chunks import DocumentChunk
+from utils.typing import Pooling
 from utils import logger
+
+cache = dc.Cache(".cache")
 
 
 class BaseEmbedder(ABC):
@@ -78,3 +85,47 @@ class BaseEmbedder(ABC):
     def provider_name(self) -> str:
         """Return the provider name."""
         pass
+    
+    @staticmethod
+    def _l2n(v: np.ndarray, eps: float = 1e-8) -> np.ndarray:
+        """L2 normalization to put between units between 0-1 """
+        n = np.linalg.norm(v) + eps
+        return v / n
+    
+    @staticmethod
+    def _pool(
+        vecs: np.ndarray, 
+        strategy: Pooling, 
+        weights: Iterable[float] | None = None
+    ) -> np.ndarray:
+        if strategy == "mean":
+            return vecs.mean(axis=0)
+        if strategy == "max":
+            return vecs.max(axis=0)
+        if strategy == "weighted":
+            w = np.asarray(list(weights) if weights is not None else [1.0]*len(vecs), dtype=np.float32)
+            w = w / (w.sum() if w.sum() > 0 else 1.0)
+            return (vecs * w[:, None]).sum(axis=0)
+        if strategy == "smooth_decay":
+            # Exponential decay by chunk index (earlier chunks weigh slightly more)
+            idx = np.arange(len(vecs), dtype=np.float32)
+            # decay factor ~0.9 per step; adjust if needed
+            w = np.power(0.9, idx)
+            w = w / w.sum()
+            return (vecs * w[:, None]).sum(axis=0)
+        raise ValueError(f"Unknown pooling strategy: {strategy}")
+    
+    async def _retry_with_backoff(self, func, *args, max_retries=5, **kwargs):
+        """Execute a function with exponential backoff retry logic"""
+        base_delay = 1.0
+        
+        for attempt in range(max_retries):
+            try:
+                return await func(*args, **kwargs)
+            except Exception as e:
+                if attempt == max_retries - 1:
+                    raise e
+                
+                # Exponential backoff with jitter
+                delay = base_delay * (2 ** attempt) + (time.time() % 1)
+                await asyncio.sleep(delay)

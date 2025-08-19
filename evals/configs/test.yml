@@ -1,7 +1,6 @@
 task: sample
 dataset_path: "data/"
 processors: ["tables", "breaks"] # toc
-sec_metadata: ["commission_number"]
 embedding: 
   provider: "openai"
   model: "text-embedding-3-small"
@@ -13,8 +12,8 @@ embedding:
 storage: 
   text_store: "sqlite"
   vector:
-    upload: false
-    clear: false
+    upload: true
+    clear: true
     index: "sec-embedding"
   outputs: ["chunks", "documents"]
 
