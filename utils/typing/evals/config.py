@@ -1,5 +1,6 @@
-from typing import Optional, List, Dict, Any, Union
+from typing import Optional, List, Dict, Any, Union, Literal
 from pathlib import Path
+from uuid import uuid4
 import yaml
 
 from pydantic import BaseModel, Field, field_validator
@@ -31,7 +32,7 @@ class Storage(BaseModel):
     sqlite_path: Optional[str] = Field(None, description="Path to SQLite database")
     vector: Optional[VectorConfig] = Field(None, description="Vector storage configuration")
     vector_db: Optional[Dict[str, Any]] = Field(None, description="Vector database configuration")
-    outputs: List[str] = Field(default_factory=list, description="Output types to store")
+    outputs: List[Literal["chunks", "documents"]] = Field(default_factory=list, description="Output types to store")
 
 
 class Report(BaseModel):
@@ -59,6 +60,7 @@ class Retrieval(BaseModel):
 
 
 class Config(BaseModel):
+    run_id: str = Field(uuid4().hex, description="Task name")
     task: str = Field(..., description="Task name")
     dataset_path: str = Field(..., description="Path to dataset")
     sec_metadata: List[str] = Field(default_factory=list, description="SEC metadata fields to extract")
@@ -75,7 +77,9 @@ class Config(BaseModel):
         """Load configuration from YAML file"""
         with open(file_path, 'r') as f:
             data = yaml.safe_load(f)
-        return cls(**data)
+        return cls(
+            **data
+            )
     
     def to_yaml(self, file_path: Union[str, Path]) -> None:
         """Save configuration to YAML file"""

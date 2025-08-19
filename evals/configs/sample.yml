@@ -31,7 +31,7 @@ storage:
   clear: true
   vector_db:
     index_name: "sec-embeddings"
-  outputs: ["objects"]
+  outputs: ["objects", "documents"]
 
 report:
   output_path: "evals/reports/sample"

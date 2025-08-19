@@ -2,6 +2,7 @@ import argparse
 import asyncio
 from pathlib import Path
 from typing import List
+from uuid import uuid4
 
 from utils import logger
 from utils.typing import DocumentChunk
@@ -37,6 +38,7 @@ async def main():
         logger.info(f"Loaded {len(configs)} configuration(s) from {args.config}")
         
         for i, config in enumerate(configs):
+            logger.info(f"RUN ID: {config.run_id}")
             logger.info(f"\n{'='*50}")
             logger.info(f"Config {i + 1}")
             logger.info(f"{'='*50}")

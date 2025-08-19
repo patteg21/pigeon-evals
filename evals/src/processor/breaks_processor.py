@@ -30,7 +30,7 @@ class BreaksProcessor(BaseProcessor):
             return []
         
         # Split on [PAGE_BREAK] markers
-        pages = body.split("[PAGE_BREAK]")
+        pages = body.split("[PAGE BREAK]")
         
         # Create chunks for each page
         chunks = []
