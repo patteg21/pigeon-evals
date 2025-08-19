@@ -1,5 +1,5 @@
 import re
-from typing import List
+from typing import List, Dict, Any, Optional
 from uuid import uuid4
 
 from utils.typing import SECDocument, SECTable

@@ -12,5 +12,7 @@ logs.log
 *.log
 
 .outputs
-emb_cache/
-images/
+.cache/
+.images/
+
+sql

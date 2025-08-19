@@ -23,61 +23,65 @@ To add dependencies + libraries
 uv add <library>
 ```
 
-# Overview
 
-```bash
-SEC Documents → 
-Preprocessing Pipeline → 
-Vector DB + SQL DB → 
-MCP Server → 
-Client/Agent
+# Preprocessing Pipeline (`evals/`)
+
+The preprocessing pipeline is a modular, configurable system for processing SEC documents and generating embeddings for vector search. The pipeline follows a document → chunks → embeddings → storage flow.
+
+## Architecture
+
+The pipeline consists of four main stages managed by runners:
+
+1. **Data Loading** (`loader/data_loader.py`) - Loads SEC documents from the `data/` directory
+2. **Processing** (`runner/processor_runner.py`) - Extracts chunks using configurable processors
+3. **Embedding** (`runner/embedder_runner.py`) - Generates embeddings with optional dimensionality reduction
+4. **Storage** (`runner/storage_runner.py`) - Stores results in vector database and SQLite
+
+## Available Processors
+
+- **breaks** - Splits documents at page breaks and logical sections
+- **tables** - Extracts and processes tabular data 
+- **toc** - Processes table of contents structures
+
+## Embedding Providers
+
+- **openai** - OpenAI text-embedding models (e.g., text-embedding-3-small)
+- **huggingface** - HuggingFace transformer models
+
+## Configuration
+
+Pipeline behavior is controlled via YAML config files in `evals/configs/`:
+
+```yaml
+task: sample
+dataset_path: "data/"
+processors: ["tables", "breaks", "toc"]
+embedding: 
+  provider: "openai"
+  model: "text-embedding-3-small"
+  dimension_reduction: {type: "PCA", dims: 512}
+storage: 
+  text_store: "sqlite"
+  vector_db: {index_name: "sec-embeddings"}
+  upload: true
+  clear: false
 ```
 
-### Text Processing Features
+## Usage
 
-1. **Fuzzy Pattern Matching**: Handles OCR artifacts and formatting inconsistencies
-2. **Page Number Tracking**: Maintains document location context
-3. **Chunk Overlap**: Preserves context across text boundaries
-4. **Linked Structure**: Maintains prev/next relationships for navigation
-
-### Metadata Extraction
-
-Form-specific patterns extract:
-- **10-K**: "For the fiscal year ended..."
-- **10-Q**: "For the quarterly period ended..."
-- **Commission File Numbers**: Standardized regulatory identifiers
-- **Period End Dates**: Financial reporting periods
-
-## Technology Stack
-
-### Core Dependencies:
-- **FastMCP**: MCP server framework
-- **Pinecone**: Vector database service
-- **OpenAI**: Embedding generation
-- **Pydantic**: Data validation and serialization
-- **SQLite**: Local text storage
-- **scikit-learn**: PCA dimensionality reduction
-- **Plotly**: Visualization generation
-
-
-### Clients
-SQL Lite : For Storing texts as some chunks were too large to be kept in the metadata of the Pinecone and this is also far more proper
-Pinecone : Vector DB Store
-
-
-### Preprocessing
-To Run:
 ```bash
 PYTHONPATH=/Users/patteg/Desktop/development/gp-mcp-demo python evals/src/main.py --config evals/configs/test.yml
 # or
 PYTHONPATH=/Users/patteg/Desktop/development/gp-mcp-demo uv run evals/src/main.py --config evals/configs/test.yml
 ```
 
-Dimesionality Reduction using PCA but also considered (Uniform Manifold Approximation and Projection - UMAP)[https://umap-learn.readthedocs.io/en/latest/].
+## Dimensionality Reduction
+
+Supports PCA for reducing embedding dimensions (configurable output dimensions). Also considered [UMAP](https://umap-learn.readthedocs.io/en/latest/) for non-linear dimensionality reduction.
 
 
 
-### MCP Server
+# MCP Server
 
 FEATURES: 
 - STDIO-compatible logging system
@@ -119,7 +123,9 @@ Visuals
             caption (Optional[str])
 ```
 
-### Tests
+
+
+#### MCP Tests Case Descriptions
 
 ```bash
 # Run all tests
@@ -133,8 +139,6 @@ python -m pytest tests/test_agent_tool_usage.py -v
 python -m pytest tests/test_vector_search_relevancy.py -v
 ```
 
-#### Test Case Descriptions
-
 - **`test_mcp.py`** - MCP server startup and tool registration
 - **`test_table_visualization.py`** - Table image generation and file handling  
 - **`test_pca_loader.py`** - PCA model loading and 512-dimension reduction
@@ -146,24 +150,3 @@ python -m pytest tests/test_vector_search_relevancy.py -v
 
 
 ### TODO's
-
-GENERAL
-- **PCA Pipeline** : Currently I am using PCA to reduce dimensionality to fit in the VectorDB. I would prefer to use a non-linear dimensionality reduction like UMAP
-- **MCP Tools** : The tooling is rather small and ideally I would have this also be able to interact with a Live API for more context beyond these documents. Additionally I would add in a few more graphs to display and instead store graphs in a Bucket Store (such as S3) which can handle individual Auth and display the images to users.
-- **Architecture** : The project now acts like two server like entities. In an ideal world I would seperate them into different repos and follow package level structure for the preprocessing pipeline and follow server level python structure for the mcp server, which is more similiar to the current setup.
-- **Error Handling**: While the pydantic models require that data fields be input in order to execute, I would take it a step further and add in some better error handling directly into the system with more `raise` error functions, already has some custom errors defined as well according to our pipeline. This applies to the MCP server as well, so users and agents can better handle interuptions rather than a python code error. Fo
-**More Test Cases** : The current test framework is good as a foundation, but testing here can allow quicker iterations in the future with verifiable results
-**Processing Pipeline** : I would make some refactors to the processing pipeline to adhere to better composible code standards, potentially a runner / workers architecture so it is more fault tolerant as well and easier to stop in place.
-**Agent Context Windows**: Since there are a lot of different documents with different lengths adding in some functionality on the embedding search to handle potentially massive response if the top_k is large so the Agent does not get overwlehmed or OpenAI API call fails.
-**Evaluation** : 
-
-SPECIFIC
-- **Vector DB Client** (`mcp_server/clients/vector_db.py:29`): Add error handling for non-existent years
-- **Document Extraction** (`preprocess/extraction.py:38`): Improve the naive search for table of contents
-- **OCR Processing** (`preprocess/extraction.py:70`): Fix the OCR or handle with REGEX
-- **MCP Testing** (`tests/test_mcp.py:25`): Update dummy system prompt
-- **MCP Examples** (`tests/test_mcp.py:42`): Add more examples to showcase system capabilities
-- **Metadata Extraction** (`preprocess/metadata.py:10`): Get more metadata such as various Q&A
-- **Code Refactoring** (`preprocessing.py:130`): Refactor into more composable code
-- **Large File Handling** (`preprocessing.py:153`): Handle very large files and chunk them due to metadata limitations
-- **Dimensionality Reduction** (`preprocessing.py:277`): Consider UMAP as alternative to PCA for Pinecone index size of 512

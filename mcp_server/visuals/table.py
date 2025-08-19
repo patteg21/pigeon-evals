@@ -6,7 +6,7 @@ from typing import Optional
 from utils.typing import TableImageData
 
 
-def create_table_image(data: TableImageData, save_path: Optional[str] = "images") -> str:
+def create_table_image(data: TableImageData, save_path: Optional[str] = "./.images") -> str:
     """Create and save a table image from structured data."""
     
     # Ensure save directory exists

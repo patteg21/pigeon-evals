@@ -93,7 +93,7 @@ class StorageRunner:
         # Initialize SQLite if text_store is sqlite
         if storage_config.get("text_store") == "sqlite":
             try:
-                db_path = storage_config.get("sqlite_path", "data/chunks.db")
+                db_path = storage_config.get("sqlite_path", ".sql/chunks.db")
                 self.sql_client = SQLClient(db_path=db_path)
                 logger.info(f"Initialized SQLite client with path: {db_path}")
             except Exception as e:
@@ -184,6 +184,7 @@ class StorageRunner:
                 "text": chunk.text,
                 "type_chunk": chunk.type_chunk,
                 "document": chunk.document.path,
+                "embeddings": chunk.embeddding if chunk.embeddding else None,
                 "date": chunk.document.date,
                 "ticker": chunk.document.ticker
             }

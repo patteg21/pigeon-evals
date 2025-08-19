@@ -27,6 +27,12 @@ class SECDocument(BaseModel):
         return v
 
 
+class SECTable(BaseModel):
+    id: str
+    page_number: Optional[int] = None
+    text: str
+
+
 class SECMinedData(BaseModel):
     period_end: Optional[str | None] = None
     commission_number: Optional[str | None] = None

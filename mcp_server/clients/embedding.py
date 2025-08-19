@@ -1,11 +1,13 @@
 from typing import List, Dict, Iterable
 import os
+import asyncio
+import time
 
 import tiktoken
 import numpy as np
 import diskcache as dc
 from dotenv import load_dotenv
-from openai import AsyncOpenAI
+from openai import AsyncOpenAI, RateLimitError
 
 from utils.typing import (
     Pooling,
@@ -14,7 +16,7 @@ from utils.pca import PCALoader
 
 load_dotenv()
 
-cache = dc.Cache("./emb_cache")
+cache = dc.Cache(".cache")
 
 
 class EmbeddingModel:
@@ -42,20 +44,44 @@ class EmbeddingModel:
 
     
     async def _embeddings(self, text: str) -> List[float]:
-        """Create embedding for a single text"""
-        response = await self.client.embeddings.create(
-            input=text,
-            model=self.model
-        )
-        return response.data[0].embedding
+        """Create embedding for a single text with rate limit handling"""
+        max_retries = 5
+        base_delay = 1.0
+        
+        for attempt in range(max_retries):
+            try:
+                response = await self.client.embeddings.create(
+                    input=text,
+                    model=self.model
+                )
+                return response.data[0].embedding
+            except RateLimitError as e:
+                if attempt == max_retries - 1:
+                    raise e
+                
+                # Exponential backoff with jitter
+                delay = base_delay * (2 ** attempt) + (time.time() % 1)
+                await asyncio.sleep(delay)
     
     async def create_embeddings_batch(self, texts: List[str]) ->  List[List[float]]:
-        """Create embeddings for multiple texts"""
-        response = await self.client.embeddings.create(
-            input=texts,
-            model=self.model
-        )
-        return [data.embedding for data in response.data]
+        """Create embeddings for multiple texts with rate limit handling"""
+        max_retries = 5
+        base_delay = 1.0
+        
+        for attempt in range(max_retries):
+            try:
+                response = await self.client.embeddings.create(
+                    input=texts,
+                    model=self.model
+                )
+                return [data.embedding for data in response.data]
+            except RateLimitError as e:
+                if attempt == max_retries - 1:
+                    raise e
+                
+                # Exponential backoff with jitter
+                delay = base_delay * (2 ** attempt) + (time.time() % 1)
+                await asyncio.sleep(delay)
     
     async def count_tokens(self, text: str) -> int:
         """Count tokens in a text for the current model"""
