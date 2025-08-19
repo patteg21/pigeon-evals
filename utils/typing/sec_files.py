@@ -15,7 +15,7 @@ class SECDocument(BaseModel):
     text: str
     path: str
     form_type: FormType
-    sec_data: Optional["SECMinedData"] = None
+    sec_data: Optional[dict] = None
 
     @field_validator("year", mode="before")
     def extract_year(cls, v, values):
@@ -31,8 +31,3 @@ class SECTable(BaseModel):
     id: str
     page_number: Optional[int] = None
     text: str
-
-
-class SECMinedData(BaseModel):
-    period_end: Optional[str | None] = None
-    commission_number: Optional[str | None] = None

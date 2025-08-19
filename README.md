@@ -163,7 +163,7 @@ python -m pytest tests/test_vector_search_relevancy.py -v
 
 **Testing** - Add more tests to the eval pipeline
 **Remove Legacy Code** - There are some parts of the codebase that I migrated away from and need to work
-**Auto Run Naming** - In my evals, auto creating different runs and names for runs to better segregate testing
+**Auto Run Naming + Tracking** - In my evals, auto creating different runs and names for runs to better segregate testing and put trained PCA / T-SNE / UMAP models in them
 **Auto Eval** - Implementing a LLM Judge Model into the processing pipeline similiar to what exists in the Test case
 **SEC Data Parsing** - Implement some REGEX to auto collect some basic information and attach to the document, such as Commission number
 **MCP Tools** - Add more tools to the MCP Server as it is rather limited currently

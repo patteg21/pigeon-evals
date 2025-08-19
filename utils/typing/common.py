@@ -7,7 +7,6 @@ FormType = Literal["10K", "10Q"]
 
 EntityType = Literal["Part", "Item", "Table", "Page"]
 
-DistanceMetric = Literal["cosine", "euclidean"]
 
 class TableImageData(BaseModel):
     headers: List[str]
