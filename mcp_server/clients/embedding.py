@@ -10,6 +10,7 @@ from openai import AsyncOpenAI
 from utils.typing import (
     Pooling,
 )
+from utils.pca import PCALoader
 
 load_dotenv()
 
@@ -22,7 +23,7 @@ class EmbeddingModel:
         # add models as needed
     }
 
-    def __init__(self, model="text-embedding-3-small"):
+    def __init__(self, model="text-embedding-3-small", pca_path: str | None = None):
         self.model: str = model
         if model not in self.TOKEN_LIMITS:
             raise ValueError(f"Unsupported model '{model}'. Provide max_tokens explicitly or add to TOKEN_LIMITS.")
@@ -30,6 +31,14 @@ class EmbeddingModel:
         self.max_tokens: int = self.TOKEN_LIMITS[model]
         self.client: AsyncOpenAI = AsyncOpenAI(api_key=os.getenv("OPENAI_API_KEY"))
         self.encoding = tiktoken.encoding_for_model(model)
+        
+        # Initialize PCA reducer
+        self.pca_reducer: PCALoader | None = None
+        if pca_path:
+            try:
+                self.pca_reducer = PCALoader(path=pca_path).load()
+            except Exception:
+                self.pca_reducer = None
 
     
     async def _embeddings(self, text: str) -> List[float]:
@@ -177,4 +186,40 @@ class EmbeddingModel:
 
         cache[text] = out
         return out
+    
+    def _apply_pca_reduction(self, embedding: List[float]) -> List[float]:
+        """Apply PCA reduction if available"""
+        if self.pca_reducer and self.pca_reducer.model is not None:
+            return self.pca_reducer.transform_one(embedding)
+        # identity + L2 normalize to keep cosine geometry stable if no PCA
+        v = np.asarray(embedding, dtype=np.float32)
+        v = v / (np.linalg.norm(v) + 1e-9)
+        return v.tolist()
+    
+    async def create_pinecone_embeddings(
+        self,
+        text: str,
+        strategy: Pooling = "mean",
+        *,
+        chunk_max_tokens: int = 2048,
+        overlap_tokens: int = 128,
+        batch_size: int = 64,
+        normalize_chunks: bool = True,
+        normalize_output: bool = True,
+        weighted_by_length: bool = True,
+    ) -> List[float]:
+        """
+        Create embedding and apply PCA reduction if configured.
+        """
+        embedding = await self.create_embedding(
+            text=text,
+            strategy=strategy,
+            chunk_max_tokens=chunk_max_tokens,
+            overlap_tokens=overlap_tokens,
+            batch_size=batch_size,
+            normalize_chunks=normalize_chunks,
+            normalize_output=normalize_output,
+            weighted_by_length=weighted_by_length,
+        )
+        return self._apply_pca_reduction(embedding)
     

@@ -7,6 +7,11 @@ from sklearn.decomposition import PCA
 import sklearn
 
 
+class PCArtifactNotFoundError(FileNotFoundError):
+    """Raised when the expected PCA artifact file is not found."""
+    pass
+
+
 def _l2_normalize(X: np.ndarray, eps: float = 1e-9) -> np.ndarray:
     return X / (np.linalg.norm(X, axis=1, keepdims=True) + eps)
 
@@ -62,6 +67,8 @@ class PCALoader:
         joblib.dump(payload, self.path)
 
     def load(self) -> "PCALoader":
+        if not os.path.exists(self.path):
+            raise PCArtifactNotFoundError(f"PCA artifact not found at: {self.path}")
         payload = joblib.load(self.path)
         self.model = payload["model"]
         return self

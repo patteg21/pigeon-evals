@@ -4,7 +4,6 @@ from mcp.server.fastmcp import FastMCP
 from mcp_server.clients import VectorDB, EmbeddingModel, SQLClient
 
 from utils import logger
-from utils.pca import PCALoader
 from utils.typing import (
     EntityType,
     TableImageData,
@@ -13,23 +12,13 @@ from mcp_server.visuals.table import create_table_image
 
 def init_mcp_tools(mcp: FastMCP):
     vector_db_client: VectorDB = VectorDB()
-    embedding_model: EmbeddingModel = EmbeddingModel()
+    embedding_model: EmbeddingModel = EmbeddingModel(pca_path="artifacts/sec_pca_512.joblib")
     sql_client: SQLClient = SQLClient()
-
-    reducer: PCALoader | None = None
-    try:
-        reducer = PCALoader(path="artifacts/sec_pca_512.joblib").load()
+    
+    if embedding_model.pca_reducer:
         logger.info("PCA reducer loaded for query-time dimensionality reduction.")
-    except Exception as e:
-        logger.warning(f"PCA not loaded — using identity (no reduction). Reason: {e}")
-
-    def _reduce(vec: list[float]) -> list[float]:
-        if reducer and reducer.model is not None:
-            return reducer.transform_one(vec)
-        # identity + L2 normalize to keep cosine geometry stable if no PCA
-        v = np.asarray(vec, dtype=np.float32)
-        v = v / (np.linalg.norm(v) + 1e-9)
-        return v.tolist()
+    else:
+        logger.warning("PCA not loaded — using identity (no reduction).")
 
     def _enrich_with_text(response):
         """Enrich search results with text content from SQLite"""
@@ -56,8 +45,7 @@ def init_mcp_tools(mcp: FastMCP):
         Embed the query, apply PCA reducer (if loaded), then ANN search.
         """
         try:
-            vec = await embedding_model.create_embedding(query)
-            vec = _reduce(vec)
+            vec = await embedding_model.create_pinecone_embeddings(query)
             response = vector_db_client.query(vec, top_k=10, include_metadata=True)
             response = _enrich_with_text(response)
             return response
@@ -74,7 +62,7 @@ def init_mcp_tools(mcp: FastMCP):
             ticker: str | None =None
         ):
         try:
-            vector = await embedding_model.create_embedding(query)
+            vector = await embedding_model.create_pinecone_embeddings(query)
             response = vector_db_client.retrieve_by_metadata(vector, entity_type=entity_type, year=year, ticker=ticker)
             response = _enrich_with_text(response)
             return response

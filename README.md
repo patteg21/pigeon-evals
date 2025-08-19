@@ -151,7 +151,19 @@ python -m pytest tests/test_mcp.py -v
 python -m pytest tests/test_table_visualization.py -v
 python -m pytest tests/test_pca_loader.py -v
 python -m pytest tests/test_agent_tool_usage.py -v
+python -m pytest tests/test_vector_search_relevancy.py -v
 ```
+
+#### Test Case Descriptions
+
+- **`test_mcp.py`** - MCP server startup and tool registration
+- **`test_table_visualization.py`** - Table image generation and file handling  
+- **`test_pca_loader.py`** - PCA model loading and 512-dimension reduction
+- **`test_agent_tool_usage.py`** - Agent tool discovery and usage patterns
+- **`test_vector_search_relevancy.py`** - AI agent evaluates search result quality
+  - Tests 4 scenarios: Apple revenue, Microsoft Azure, Tesla production, general tech earnings
+  - Scores semantic match, accuracy, completeness, context relevance (0.0-1.0)
+  - Passes if ≥75% of cases score above threshold (0.6-0.7)
 
 
 ### TODO's
@@ -163,6 +175,7 @@ GENERAL
 - **Error Handling**: While the pydantic models require that data fields be input in order to execute, I would take it a step further and add in some better error handling directly into the system with more `raise` error functions, already has some custom errors defined as well according to our pipeline. This applies to the MCP server as well, so users and agents can better handle interuptions rather than a python code error. Fo
 **More Test Cases** : The current test framework is good as a foundation, but testing here can allow quicker iterations in the future with verifiable results
 **Processing Pipeline** : I would make some refactors to the processing pipeline to adhere to better composible code standards, potentially a runner / workers architecture so it is more fault tolerant as well and easier to stop in place.
+**Agent Context Windows**: Since there are a lot of different documents with different lengths adding in some functionality on the embedding search to handle potentially massive response if the top_k is large so the Agent does not get overwlehmed or OpenAI API call fails.
 **Evaluation** : 
 
 SPECIFIC
