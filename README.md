@@ -24,26 +24,32 @@ uv add <library>
 ```
 
 
-# Preprocessing Pipeline (`evals/src`)
+# Document Processing Pipeline (`/evals/`)
+
+## Overview
+A modular pipeline for processing SEC documents with embeddings, storage, and evaluation. The pipeline transforms raw documents into searchable vector representations using configurable processors and storage backends. The primary driver behind this setup is to create a proper evaluation pipeline that can also operate in a production setting.
 
 ## Usage
-**Note** that the usage uses PythonPath due to borrowing from the mcp_server just for development sake, typically these would live seperate.
 ```bash
 PYTHONPATH=<absolute path to project> python evals/src/main.py --config evals/configs/test.yml
 # or
 PYTHONPATH=<absolute path to project> uv run evals/src/main.py --config evals/configs/test.yml
 ```
 
-`PYTHONPATH=/Users/patteg/Desktop/development/gp-mcp-demo python evals/src/main.py --config evals/configs/test.yml`
+## Pipeline Architecture
+The pipeline follows a sequential processing flow:
 
+1. **Document Loading** - Reads raw documents from specified directory
+2. **Text Processing** - Applies configurable processors (tables, page breaks, TOC parsing)
+3. **Embedding Generation** - Creates vector representations using OpenAI embeddings
+4. **Dimensionality Reduction** - Supports PCA for reducing embedding dimensions (configurable output dimensions). Ideally would add in alternatives for the future such as [UMAP](https://umap-learn.readthedocs.io/en/latest/) as well as several other methods.
+5. **Storage** - Saves processed data to both text (SQLite) and vector (Pinecone) stores
 
-
-#### Features
-This is meant ot be a highly composable testing pipeline to be able to iterate and test as quickly as possible. The core of it uses templates so that I can quickly test different variations of parameters. All the pices of the flow are interchangable or removable, meaning I can add / remove / extend and functionality I need in future iterations. The main belief behind this architecture is so that I can keep developing and still consider all different ways we can process the data to get to an output.
-
-All the core functionality and the YAML files are linked to `Pydantic` Models to enforce type checking so missing fields automcatically throw errors. This is important for some of the document processing as well because if it comes across an unexpected field, it will immediately throw and error. Theses will help to indicate logical failures in the pipeline where certain data fields are being improperly created. An additional step in the future would be more explicit checking as seem with `FormType` where we expect Two possible entries. We can take this a step further with `re` based matching to validate data that may be more complex.
-
-Down the line I would ideally expand tests cases for each individual piece to the evals/src/ so that we can test each Object, from base models to the pieces of those base models.
+### Key Features
+- **Fully modular design** - Add/remove/swap any processing component
+- **Pydantic validation** - Type-safe configuration with automatic error detection
+- **Multi-threaded embedding** - Parallel processing for faster execution
+- **Flexible storage** - Support for multiple text and vector storage backends
 
 ```bash
 task: sample
@@ -76,15 +82,20 @@ retrival: {type: "cosine", top_k: 10}
 
 ```
 
+__TODO:__
+- Seperate the code in the MCP Server from what is in the processing pipeline. It currently borrows some things like the VectorDB Client and the SQL client. Ideally they would have their own ones due to the composible nature of the pipeline
+- More ways to chunk the document, particularly around some of the markers within the document such as smaller sectional differences, bullet pointed lists, and paragraph level. Also adding in more versatility with overlapping, max_chunk_size etc 
+- Add in run based report generations where all outputs for a given run can be put in seperate file stores.
+- Finishing the LLM as a Judge Piece as well as a series of RAG Test Cases that users can dynamically define / increase. This would also include giving users the outputs of the RAG for human evaluation as well.
+- Include more Pydantic models and elmiate mores usages of dictionaries where reasonable for more structured and readble code practices. 
+- Move the final parts of utils into more seperated pieces, primarily the typing which should be moved into the evals (since I am using shared typing I have not done so)
+- Expirement with other types of search other than dense-embedding based, using sparse embeddings like TF-IDF or a mixture of both
+- Finish the TOC Parser with the new updated code processing system (legacy code from first processing pipeline)
 
+<br>
+<br>
 
-**Dimensionality Reduction**
-
-Supports PCA for reducing embedding dimensions (configurable output dimensions). Ideally would add in alternatives for the future such as [UMAP](https://umap-learn.readthedocs.io/en/latest/) as well as several other methods.
-
-
-
-
+---
 
 
 # MCP Server
@@ -110,12 +121,9 @@ Search
         Params: 
             query (str)
             ticker (Optional[str])
-    - search_on_metadata
-        Params:
-            query (str)
             entity_type (Optional[EntityType])
             year (Optional[str])
-            ticker (Optional[str])
+
     - search_by_id
         Params:
             vector_id (str)
@@ -184,11 +192,10 @@ python -m pytest tests/test_vector_search_relevancy.py -v
   - Passes if ≥75% of cases score above threshold (0.6-0.7)
 
 
-### TODO's
-
-**Testing** - Add more tests to the eval pipeline
-**Remove Legacy Code** - There are some parts of the codebase that I migrated away from and need to work
-**Auto Run Naming + Tracking** - In my evals, auto creating different runs and names for runs to better segregate testing and put trained PCA / T-SNE / UMAP models in them
-**Auto Eval** - Implementing a LLM Judge Model into the processing pipeline similiar to what exists in the Test case
-**SEC Data Parsing** - Implement some REGEX to auto collect some basic information and attach to the document, such as Commission number
-**MCP Tools** - Add more tools to the MCP Server as it is rather limited currently
+__TODO:__
+- Add more tooling such as powerpoint generation to the tool-kit
+- Overhaul the typing in the server itself to use even more Pydantic Models 
+- Create a seperate repo for the MCP Server and remove all inter depdenncies.
+- Increase test coverage to get a more granual level
+- Do a more complex RAG system when give a user query such as - query rewrite, query summarization, text extraction to better server the request of a user.
+- Add in additional query parameters for the Agent to further filter based on the document metadata.

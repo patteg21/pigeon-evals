@@ -2,7 +2,7 @@ from typing import List
 from utils import logger
 from utils.typing import SECDocument
 from utils.typing.chunks import DocumentChunk
-from utils.typing.evals.config import Config
+from evals.src.types import Config
 from evals.src.processor import TOCProcessor, TablesProcessor, BreaksProcessor
 
 

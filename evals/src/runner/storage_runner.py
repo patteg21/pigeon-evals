@@ -3,7 +3,7 @@ from pathlib import Path
 
 from utils import logger
 from utils.typing import DocumentChunk, SECDocument
-from utils.typing.evals.config import Storage
+from evals.src.types import Storage
 from mcp_server.clients.vector_db import VectorDB
 from mcp_server.clients.sql_db import SQLClient
 

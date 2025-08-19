@@ -12,7 +12,7 @@ from openai import AsyncOpenAI, RateLimitError
 from utils.typing import (
     Pooling,
 )
-from utils.pca import PCALoader
+from mcp_server.clients.pca import PCALoader
 
 load_dotenv()
 

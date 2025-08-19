@@ -12,7 +12,7 @@ class SECDataParser:
         """Extract comprehensive SEC metadata from 10-K/10-Q documents."""
         
         metadata = {}
-        text = document.text
+        text = document.text.split("[PAGE BREAK]")[0] # Just uses the first page
         form_type = document.form_type
         
         # Extract company name

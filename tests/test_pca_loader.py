@@ -5,7 +5,7 @@ import tempfile
 from unittest.mock import patch
 
 from mcp_server.clients import EmbeddingModel
-from utils.pca import PCALoader
+from mcp_server.clients.pca import PCALoader
 from utils import logger
 
 class TestPCALoader:

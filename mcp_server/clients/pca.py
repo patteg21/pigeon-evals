@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import List, Iterable, Dict
+from typing import Iterable, Dict
 import os
 import numpy as np
 import joblib

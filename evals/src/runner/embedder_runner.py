@@ -1,9 +1,8 @@
 from typing import List, Tuple
 import asyncio
-import concurrent.futures
 from utils import logger
 from utils.typing.chunks import DocumentChunk
-from utils.typing.evals.config import Embedding
+from evals.src.types import Embedding
 from evals.src.embedder import OpenAIEmbedder, HuggingFaceEmbedder
 
 

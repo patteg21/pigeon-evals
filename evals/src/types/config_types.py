@@ -34,7 +34,7 @@ class Storage(BaseModel):
     vector_db: Optional[Dict[str, Any]] = Field(None, description="Vector database configuration")
     outputs: List[Literal["chunks", "documents"]] = Field(default_factory=list, description="Output types to store")
 
-\
+
 class Generator(BaseModel):
     provider: str = Field(..., description="Generator provider")
     model: str = Field(..., description="Generator model name")

@@ -5,7 +5,7 @@ from typing import List
 
 from utils import logger
 from utils.typing import DocumentChunk
-from utils.typing.evals.config import Config
+from evals.src.types import Config
 
 from loader.data_loader import DataLoader
 from runner import ProcessorRunner, EmbedderRunner, StorageRunner
