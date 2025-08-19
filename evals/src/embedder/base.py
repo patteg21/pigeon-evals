@@ -46,15 +46,15 @@ class BaseEmbedder(ABC):
     
     async def embed_chunks(self, chunks: List[DocumentChunk]) -> List[DocumentChunk]:
         """Embed multiple chunks with automatic dimensional reduction."""
-        # Get raw embeddings
+        # Get raw embeddings from provider (OpenAI/HuggingFace)
         raw_embeddings = await self._embed_chunks_raw(chunks)
         
         # Apply dimensional reduction if configured
         if self.reducer:
             logger.info(f"Applying {self.reducer.name} dimensional reduction")
-            # Train and apply reduction
+            # Train PCA on ALL raw embeddings, then transform them
             reduced_embeddings = self.reducer.fit_transform(raw_embeddings)
-            # Save the trained model
+            # Save trained PCA model to disk for later use
             self.reducer.save()
         else:
             reduced_embeddings = raw_embeddings

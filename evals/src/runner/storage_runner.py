@@ -196,7 +196,7 @@ class StorageRunner:
                 "text": chunk.text,
                 "type_chunk": chunk.type_chunk,
                 "document": chunk.document.path,
-                "embeddings": chunk.embeddding if chunk.embeddding else None,
+                "embeddings": [] if chunk.embeddding else None,
                 "date": chunk.document.date,
                 "ticker": chunk.document.ticker
             }
@@ -222,7 +222,7 @@ class StorageRunner:
                 "date": doc.date,
                 "path": doc.path,
                 "form_type": doc.form_type,
-                # "text": doc.text,
+                "text": doc.text[:100] + "...",
                 "sec_data": doc.sec_data,
                 "sec_metadata": doc.sec_metadata.model_dump() if doc.sec_metadata else None
             }

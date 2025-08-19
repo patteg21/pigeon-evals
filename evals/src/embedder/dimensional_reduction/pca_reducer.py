@@ -8,6 +8,7 @@ import sklearn
 
 from .base import BaseDimensionalReducer
 
+from utils import logger
 
 class PCArtifactNotFoundError(FileNotFoundError):
     """Raised when the expected PCA artifact file is not found."""
@@ -41,10 +42,14 @@ class PCAReducer(BaseDimensionalReducer):
     
     def fit(self, embeddings: List[List[float]]) -> "PCAReducer":
         """Fit PCA on embeddings data."""
+        logger.warning("PCA is being Fit...")
         X = _as_float32_array(embeddings)
         n_comp = min(self.target_dim, X.shape[1])
+        # Train PCA model on embedding data
         self.model = PCA(n_components=n_comp, random_state=self.seed).fit(X)
         self.is_fitted = True
+        logger.warning("PCA finishing fitting...")
+
         return self
     
     def transform(self, embeddings: List[List[float]]) -> List[List[float]]:

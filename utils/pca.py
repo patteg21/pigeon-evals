@@ -35,6 +35,7 @@ class PCALoader:
     def fit(self, embeddings: Iterable[Iterable[float]]) -> "PCALoader":
         X = _as_float32_array(embeddings)
         n_comp = min(self.target_dim, X.shape[1])
+        # Train PCA model on embedding data
         self.model = PCA(n_components=n_comp, random_state=self.seed).fit(X)
         return self
 

@@ -85,6 +85,9 @@ PYTHONPATH=<absolute path to project> python evals/src/main.py --config evals/co
 PYTHONPATH=<absolute path to project> uv run evals/src/main.py --config evals/configs/test.yml
 ```
 
+`PYTHONPATH=/Users/patteg/Desktop/development/gp-mcp-demo python evals/src/main.py --config evals/configs/test.yml`
+
+
 ## Dimensionality Reduction
 
 Supports PCA for reducing embedding dimensions (configurable output dimensions). Also considered [UMAP](https://umap-learn.readthedocs.io/en/latest/) for non-linear dimensionality reduction.

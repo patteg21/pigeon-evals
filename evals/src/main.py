@@ -2,7 +2,6 @@ import argparse
 import asyncio
 from pathlib import Path
 from typing import List
-from uuid import uuid4
 
 from utils import logger
 from utils.typing import DocumentChunk

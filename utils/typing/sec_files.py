@@ -1,7 +1,7 @@
 from typing import Optional
 from datetime import datetime
 
-from pydantic import BaseModel, field_validator
+from pydantic import BaseModel, model_validator
 
 from utils.typing.common import (
     FormType
@@ -35,14 +35,14 @@ class SECDocument(BaseModel):
     sec_data: Optional[dict] = None
     sec_metadata: Optional[SECMetadata] = None
 
-    @field_validator("year", mode="before")
-    def extract_year(cls, v, values):
-        if v is None and "date" in values:
+    @model_validator(mode="after")
+    def set_year(self):
+        if self.date:
             try:
-                return datetime.strptime(values["date"], "%Y-%m-%d").year
+                self.year = datetime.strptime(self.date, "%Y-%m-%d").year
             except ValueError:
-                return None
-        return v
+                self.year = None
+        return self
 
 
 class SECTable(BaseModel):

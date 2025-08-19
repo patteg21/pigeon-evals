@@ -1,6 +1,7 @@
 task: sample
 dataset_path: "data/"
 processors: ["tables", "breaks"] # toc
+sec_metadata: ["commission_number"]
 embedding: 
   provider: "openai"
   model: "text-embedding-3-small"
@@ -15,7 +16,7 @@ storage:
     upload: false
     clear: false
     index: "sec-embedding"
-  outputs: ["chunks"]
+  outputs: ["chunks", "documents"]
 
 report:
   output_path: "evals/reports/sample"
