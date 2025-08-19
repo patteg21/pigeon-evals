@@ -24,61 +24,10 @@ uv add <library>
 ```
 
 
-# Preprocessing Pipeline (`evals/`)
-
-The preprocessing pipeline is a modular, configurable system for processing SEC documents and generating embeddings for vector search. The pipeline follows a document → chunks → embeddings → storage flow.
-
-## Architecture
-
-The pipeline consists of four main stages managed by runners:
-
-1. **Data Loading** (`loader/data_loader.py`) - Loads SEC documents from the `data/` directory
-2. **Processing** (`runner/processor_runner.py`) - Extracts chunks using configurable processors
-3. **Embedding** (`runner/embedder_runner.py`) - Generates embeddings with optional dimensionality reduction
-4. **Storage** (`runner/storage_runner.py`) - Stores results in vector database and SQLite
-
-## Available Processors
-
-- **breaks** - Splits documents at page breaks and logical sections
-- **tables** - Extracts and processes tabular data 
-- **toc** - Processes table of contents structures
-
-## Embedding Providers
-
-- **openai** - OpenAI text-embedding models (e.g., text-embedding-3-small)
-- **huggingface** - HuggingFace transformer models
-
-## Configuration
-
-Pipeline behavior is controlled via YAML config files in `evals/configs/`:
-
-```yaml
-task: sample
-dataset_path: "data/"
-sec_metadata: ["commission_number"]
-processors: ["tables", "breaks", "toc"]
-embedding: 
-  provider: "openai"
-  model: "text-embedding-3-small"
-  pooling_strategy: "mean"  # mean, max, weighted, smooth_decay
-  dimension_reduction: {type: "PCA", dims: 512}   # UMAP / T-SNE
-  use_threading: true
-  max_workers: 8
-
-storage: 
-  text_store: "sqlite"
-  vector:
-    upload: false
-    clear: false
-    index: "sec-embedding"
-  outputs: ["chunks"]
-
-report:
-  output_path: "evals/reports/sample"
-```
+# Preprocessing Pipeline (`evals/src`)
 
 ## Usage
-
+**Note** that the usage uses PythonPath due to borrowing from the mcp_server just for development sake, typically these would live seperate.
 ```bash
 PYTHONPATH=<absolute path to project> python evals/src/main.py --config evals/configs/test.yml
 # or
@@ -88,9 +37,53 @@ PYTHONPATH=<absolute path to project> uv run evals/src/main.py --config evals/co
 `PYTHONPATH=/Users/patteg/Desktop/development/gp-mcp-demo python evals/src/main.py --config evals/configs/test.yml`
 
 
-## Dimensionality Reduction
 
-Supports PCA for reducing embedding dimensions (configurable output dimensions). Also considered [UMAP](https://umap-learn.readthedocs.io/en/latest/) for non-linear dimensionality reduction.
+#### Features
+This is meant ot be a highly composable testing pipeline to be able to iterate and test as quickly as possible. The core of it uses templates so that I can quickly test different variations of parameters. All the pices of the flow are interchangable or removable, meaning I can add / remove / extend and functionality I need in future iterations. The main belief behind this architecture is so that I can keep developing and still consider all different ways we can process the data to get to an output.
+
+All the core functionality and the YAML files are linked to `Pydantic` Models to enforce type checking so missing fields automcatically throw errors. This is important for some of the document processing as well because if it comes across an unexpected field, it will immediately throw and error. Theses will help to indicate logical failures in the pipeline where certain data fields are being improperly created. An additional step in the future would be more explicit checking as seem with `FormType` where we expect Two possible entries. We can take this a step further with `re` based matching to validate data that may be more complex.
+
+Down the line I would ideally expand tests cases for each individual piece to the evals/src/ so that we can test each Object, from base models to the pieces of those base models.
+
+```bash
+task: sample
+dataset_path: "data/"
+processors: ["tables", "breaks"] # toc - short for Table of Contents Parses the TOC and seperates based on the different sections
+embedding: 
+  provider: "openai"
+  model: "text-embedding-3-small"
+  pooling_strategy: "mean"  # Other options:  max, weighted, smooth_decay
+  dimension_reduction: {type: "PCA", dims: 512}   # This can be forgone, it is optional, Ideally I would add in UMAP / T-SNE though those are not implemented
+  use_threading: true
+  max_workers: 8
+
+# Currently only supports the local sqlite and pinecone DB but ideally we can add more control on thinks like index
+storage: 
+  text_store: "sqlite"
+  vector:
+    upload: true    # if we can to upload the data
+    clear: true     # if we want to clear the existing data in the index
+    index: "sec-embedding"
+  outputs: ["chunks", "documents"] # local outputs of items
+
+# Below is not added but would be apart of the evaluation pipeline where we could provide use cases etc for the RAG to be tested and manually evaluated
+generator: {provider: "openai", model: "gpt-4o-mini"}
+judge:
+  type: "llm"
+  prompt: "You are a strict grader. Score 1-5 for relevance and faithfulness..."
+  calibration: {gold_fraction: 0.1}
+retrival: {type: "cosine", top_k: 10}
+
+```
+
+
+
+**Dimensionality Reduction**
+
+Supports PCA for reducing embedding dimensions (configurable output dimensions). Ideally would add in alternatives for the future such as [UMAP](https://umap-learn.readthedocs.io/en/latest/) as well as several other methods.
+
+
+
 
 
 

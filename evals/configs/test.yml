@@ -14,11 +14,9 @@ storage:
   vector:
     upload: true
     clear: true
-    index: "sec-embedding"
+    index: "sec-embeddings"
   outputs: ["chunks", "documents"]
 
-report:
-  output_path: "evals/reports/sample"
 
 generator: {provider: "openai", model: "gpt-4o-mini"}
 judge:
