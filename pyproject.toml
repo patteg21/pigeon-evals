@@ -49,6 +49,7 @@ dependencies = [
     "pyyaml>=6.0.2",
     "torch>=2.8.0",
     "sentence-transformers>=5.1.0",
+    "pandas>=2.3.1",
 ]
 
 [tool.uv.workspace]

@@ -131,6 +131,33 @@ Visuals
             rows (List[List])
             title (Optional[str])
             caption (Optional[str])
+    
+    - create_line_chart_visualization
+        Params:
+            data_points (List[dict])  # [{"x": value, "y": value, "label": optional}]
+            title (Optional[str])
+            x_label (Optional[str])
+            y_label (Optional[str])
+            line_style (str)  # "solid", "dashed", "dotted"
+            color (Optional[str])
+    
+    - create_bar_chart_visualization
+        Params:
+            categories (List[str])
+            values (List[float])
+            title (Optional[str])
+            x_label (Optional[str])
+            y_label (Optional[str])
+            colors (Optional[List[str]])
+            horizontal (bool)  # default: False
+    
+    - create_financial_chart_visualization
+        Params:
+            financial_data (List[dict])  # [{"date": str, "open": float, "high": float, "low": float, "close": float, "volume": optional}]
+            title (Optional[str])
+            ticker (Optional[str])
+            chart_type (str)  # "candlestick", "ohlc", "line"
+            show_volume (bool)  # default: True
 ```
 
 
@@ -144,6 +171,7 @@ python -m pytest tests/ -v
 # Individual test files
 python -m pytest tests/test_mcp.py -v
 python -m pytest tests/test_table_visualization.py -v
+python -m pytest tests/test_chart_visualizations.py -v
 python -m pytest tests/test_pca_loader.py -v
 python -m pytest tests/test_agent_tool_usage.py -v
 python -m pytest tests/test_vector_search_relevancy.py -v
@@ -151,6 +179,7 @@ python -m pytest tests/test_vector_search_relevancy.py -v
 
 - **`test_mcp.py`** - MCP server startup and tool registration
 - **`test_table_visualization.py`** - Table image generation and file handling  
+- **`test_chart_visualizations.py`** - Chart visualization tools (line, bar, financial charts using Plotly)
 - **`test_pca_loader.py`** - PCA model loading and 512-dimension reduction
 - **`test_agent_tool_usage.py`** - Agent tool discovery and usage patterns
 - **`test_vector_search_relevancy.py`** - AI agent evaluates search result quality

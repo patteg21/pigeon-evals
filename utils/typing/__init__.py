@@ -4,5 +4,12 @@ from .common import (
     Pooling,
     FormType,
     EntityType,
-    TableImageData
+    ChartType,
+    LineStyle,
+    TableImageData,
+    DataPoint,
+    FinancialDataPoint,
+    ChartData,
+    BarChartData,
+    FinancialChartData
 )
