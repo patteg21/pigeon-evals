@@ -49,7 +49,7 @@ async def test_agent_tool_discovery_and_usage():
         agent = Agent(
             name="Assistant",
             instructions="""You are a helpful financial analyst assistant. Use the tools to answer questions based on SEC filings. 
-            When asked about your capabilities, list all available tools and demonstrate their usage.""",
+            When asked about your capabilities, list all available tools and demonstrate their usage. SEARCH on AWS""",
             mcp_servers=[server],
         )
         

@@ -33,9 +33,6 @@ storage:
     index_name: "sec-embeddings"
   outputs: ["objects", "documents"]
 
-report:
-  output_path: "evals/reports/sample"
-
 generator: {provider: "openai", model: "gpt-4o-mini"}
 judge:
   type: "llm"

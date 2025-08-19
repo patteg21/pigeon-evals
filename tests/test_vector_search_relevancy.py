@@ -311,7 +311,7 @@ async def test_vector_search_relevancy_evaluation():
         total_tests = len(results)
         passed_tests = sum(1 for r in results if r.get('passed', False))
         
-        logger.info(f"\n=== VECTOR SEARCH RELEVANCY TEST SUMMARY ===")
+        logger.info("\n=== VECTOR SEARCH RELEVANCY TEST SUMMARY ===")
         logger.info(f"Total tests: {total_tests}")
         logger.info(f"Passed: {passed_tests}")
         logger.info(f"Failed: {total_tests - passed_tests}")

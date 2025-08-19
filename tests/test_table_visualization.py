@@ -2,7 +2,7 @@ import os
 import pytest
 
 from mcp_server.visuals.table import create_table_image
-from utils.typing import TableImageData
+from mcp_server.types.visuals_type import TableImageData
 from utils import logger
 
 

@@ -116,7 +116,7 @@ class VectorDB:
             raise UploadError(f"Failed to upload chunk: {str(e)}")
     
     
-    def query(self, vector, top_k=10, include_metadata=True):
+    def query(self, vector, top_k=10, include_metadata=True, filter=None):
         """Query the index for similar vectors"""
         if not vector or not isinstance(vector, list):
             raise InvalidFilterError("vector", vector, "Vector must be a non-empty list of floats")
@@ -125,11 +125,15 @@ class VectorDB:
             raise InvalidFilterError("top_k", top_k, "top_k must be a positive integer")
             
         try:
-            return self.index.query(
-                vector=vector,
-                top_k=top_k,
-                include_metadata=include_metadata
-            )
+            query_params = {
+                "vector": vector,
+                "top_k": top_k,
+                "include_metadata": include_metadata
+            }
+            if filter:
+                query_params["filter"] = filter
+                
+            return self.index.query(**query_params)
         except Exception as e:
             raise VectorDBError(f"Query failed: {str(e)}")
     

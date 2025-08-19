@@ -3,7 +3,7 @@ import pytest
 from datetime import datetime, timedelta
 
 from mcp_server.visuals.charts import create_line_chart, create_bar_chart, create_financial_chart
-from utils.typing import ChartData, BarChartData, FinancialChartData, DataPoint, FinancialDataPoint
+from mcp_server.types.visuals_type import ChartData, BarChartData, FinancialChartData, DataPoint, FinancialDataPoint
 from utils import logger
 
 
