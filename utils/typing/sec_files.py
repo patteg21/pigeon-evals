@@ -7,6 +7,23 @@ from utils.typing.common import (
     FormType
 )
 
+class SECMetadata(BaseModel):
+    """Comprehensive metadata extracted from SEC documents."""
+    company_name: Optional[str] = None
+    period_end: Optional[str] = None
+    commission_number: Optional[str] = None
+    state_of_incorporation: Optional[str] = None
+    ein: Optional[str] = None
+    address: Optional[str] = None
+    city: Optional[str] = None
+    state: Optional[str] = None
+    zip_code: Optional[str] = None
+    phone: Optional[str] = None
+    market_value: Optional[str] = None
+    shares_outstanding: Optional[str] = None
+    shares_outstanding_date: Optional[str] = None
+    filer_status: Optional[str] = None
+
 class SECDocument(BaseModel):
     ticker: str
     company: Optional[str] = None
@@ -16,6 +33,7 @@ class SECDocument(BaseModel):
     path: str
     form_type: FormType
     sec_data: Optional[dict] = None
+    sec_metadata: Optional[SECMetadata] = None
 
     @field_validator("year", mode="before")
     def extract_year(cls, v, values):

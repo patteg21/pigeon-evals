@@ -1,6 +1,20 @@
 task: sample
 dataset_path: "data/"
-sec_metadata: ["commission_number"]
+sec_metadata: [
+  "period_end", 
+  "commission_number",
+  "state_of_incorporation",
+  "ein",
+  "address",
+  "city", 
+  "state",
+  "zip_code",
+  "phone",
+  "market_value",
+  "shares_outstanding",
+  "shares_outstanding_date",
+  "filer_status"
+]
 processors: ["tables", "breaks"] # TOC
 embedding: 
   provider: "openai"

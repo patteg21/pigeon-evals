@@ -2,7 +2,8 @@ from typing import List, Dict, Any
 from pathlib import Path
 
 from utils import logger
-from utils.typing import DocumentChunk
+from utils.typing import DocumentChunk, SECDocument
+from utils.typing.evals.config import Storage
 from mcp_server.clients.vector_db import VectorDB
 from mcp_server.clients.sql_db import SQLClient
 
@@ -14,12 +15,18 @@ class StorageRunner:
         self.vector_db = None
         self.sql_client = None
     
-    async def run_storage(self, chunks: List[DocumentChunk], storage_config: Dict[str, Any]) -> Dict[str, Any]:
+    async def run_storage(
+            self, 
+            chunks: List[DocumentChunk],
+            documents: List[SECDocument], 
+            storage_config: Storage
+        ) -> Dict[str, Any]:
         """
         Store chunks based on storage configuration
         
         Args:
             chunks: List of DocumentChunk objects with embeddings
+            documents: List of SECDocument objects
             storage_config: Storage configuration from YAML
             
         Returns:
@@ -42,7 +49,8 @@ class StorageRunner:
         logger.info(f"Found {len(embedded_chunks)} chunks with embeddings for vector storage")
         
         # Clear vector database if configured
-        if storage_config.get("clear", False) and self.vector_db:
+        vector_config = storage_config.vector
+        if vector_config and vector_config.clear and self.vector_db:
             try:
                 logger.info("Clearing existing vectors from VectorDB")
                 self.vector_db.clear()
@@ -53,22 +61,22 @@ class StorageRunner:
                 results["errors"].append(error_msg)
 
         # Store in vector database if configured and upload enabled
-        if storage_config.get("upload", False) and self.vector_db and embedded_chunks:
+        if vector_config and vector_config.upload and self.vector_db and embedded_chunks:
             vector_results = await self._store_in_vector_db(embedded_chunks, storage_config)
             results["stored_vector"] = vector_results["stored"]
             results["errors"].extend(vector_results["errors"])
         
         # Store in SQLite if text_store is configured
-        text_store = storage_config.get("text_store")
-        if text_store == "sqlite" and self.sql_client:
+        text_store = storage_config.text_store
+        if text_store and text_store == "sqlite" and self.sql_client:
             sql_results = await self._store_in_sqlite(chunks, storage_config)
             results["stored_text"] = sql_results["stored"]
             results["errors"].extend(sql_results["errors"])
         
         # Generate outputs if configured
-        outputs = storage_config.get("outputs", [])
+        outputs = storage_config.outputs
         if outputs:
-            await self._generate_outputs(chunks, outputs, storage_config)
+            await self._generate_outputs(chunks, documents, outputs, storage_config)
         
         logger.info(f"Storage complete: {results['stored_vector']} vectors, {results['stored_text']} text chunks")
         if results["errors"]:
@@ -76,14 +84,17 @@ class StorageRunner:
         
         return results
     
-    async def _initialize_storage(self, storage_config: Dict[str, Any]):
+    async def _initialize_storage(self, storage_config: Storage):
         """Initialize storage clients based on configuration"""
         
         # Initialize vector DB if upload is enabled
-        if storage_config.get("upload", False):
+        vector_config = storage_config.vector
+        if vector_config and vector_config.upload:
             try:
                 # Get index name from config or use default
-                index_name = storage_config.get("vector_db", {}).get("index_name", "sec-embeddings")
+                index_name = (vector_config.index_name or vector_config.index or 
+                             (storage_config.vector_db.get("index_name") if storage_config.vector_db else None) or 
+                             "sec-embeddings")
                 self.vector_db = VectorDB(index_name=index_name)
                 logger.info(f"Initialized VectorDB with index: {index_name}")
             except Exception as e:
@@ -91,16 +102,16 @@ class StorageRunner:
                 self.vector_db = None
         
         # Initialize SQLite if text_store is sqlite
-        if storage_config.get("text_store") == "sqlite":
+        if storage_config.text_store and storage_config.text_store == "sqlite":
             try:
-                db_path = storage_config.get("sqlite_path", ".sql/chunks.db")
+                db_path = storage_config.sqlite_path or ".sql/chunks.db"
                 self.sql_client = SQLClient(db_path=db_path)
                 logger.info(f"Initialized SQLite client with path: {db_path}")
             except Exception as e:
                 logger.error(f"Failed to initialize SQLite: {e}")
                 self.sql_client = None
     
-    async def _store_in_vector_db(self, chunks: List[DocumentChunk], storage_config: Dict[str, Any]) -> Dict[str, Any]:
+    async def _store_in_vector_db(self, chunks: List[DocumentChunk], storage_config: Storage) -> Dict[str, Any]:
         """Store chunks in vector database"""
         logger.info(f"Storing {len(chunks)} chunks in VectorDB")
         
@@ -122,7 +133,7 @@ class StorageRunner:
         
         return results
     
-    async def _store_in_sqlite(self, chunks: List[DocumentChunk], storage_config: Dict[str, Any]) -> Dict[str, Any]:
+    async def _store_in_sqlite(self, chunks: List[DocumentChunk], storage_config: Storage) -> Dict[str, Any]:
         """Store chunks in SQLite database"""
         logger.info(f"Storing {len(chunks)} chunks in SQLite")
         
@@ -154,26 +165,27 @@ class StorageRunner:
         return results
     
     
-    async def _generate_outputs(self, chunks: List[DocumentChunk], outputs: List[str], storage_config: Dict[str, Any]):
+    async def _generate_outputs(self, chunks: List[DocumentChunk], documents: List[SECDocument], outputs: List[str], storage_config: Storage):
         """Generate output files based on configuration"""
         logger.info(f"Generating outputs: {outputs}")
         
         # Get output directory from report config or use default
-        output_dir = Path("evals/reports")
-        if "report" in storage_config:
-            report_path = storage_config["report"].get("output_path", "evals/reports")
-            output_dir = Path(report_path).parent / "outputs"
+        output_dir = Path("evals/reports/outputs")
+        output_dir.mkdir(parents=True, exist_ok=True)
         
         output_dir.mkdir(parents=True, exist_ok=True)
         
         try:
-            if "objects" in outputs:
-                await self._export_objects(chunks, output_dir)
+            if "chunks" in outputs:
+                await self._export_chunks(chunks, output_dir)
+            
+            if "documents" in outputs:
+                await self._export_documents(documents, output_dir)
             
         except Exception as e:
             logger.error(f"Failed to generate outputs: {e}")
     
-    async def _export_objects(self, chunks: List[DocumentChunk], output_dir: Path):
+    async def _export_chunks(self, chunks: List[DocumentChunk], output_dir: Path):
         """Export chunks as JSON objects"""
         import json
         
@@ -196,3 +208,29 @@ class StorageRunner:
             json.dump(objects_data, f, indent=2)
         
         logger.info(f"Exported {len(objects_data)} chunk objects to {output_file}")
+
+    async def _export_documents(self, documents: List[SECDocument], output_dir: Path):
+        """Export documents as JSON objects"""
+        import json
+        
+        documents_data = []
+        for doc in documents:
+            doc_obj = {
+                "ticker": doc.ticker,
+                "company": doc.company,
+                "year": doc.year,
+                "date": doc.date,
+                "path": doc.path,
+                "form_type": doc.form_type,
+                # "text": doc.text,
+                "sec_data": doc.sec_data,
+                "sec_metadata": doc.sec_metadata.model_dump() if doc.sec_metadata else None
+            }
+            documents_data.append(doc_obj)
+        
+        output_dir.mkdir(parents=True, exist_ok=True)
+        output_file = output_dir / "documents.json"
+        with open(output_file, 'w') as f:
+            json.dump(documents_data, f, indent=2)
+        
+        logger.info(f"Exported {len(documents_data)} documents to {output_file}")

@@ -1,0 +1,11 @@
+task: sample
+dataset_path: "data/"
+sec_metadata: [
+  "commission_number",
+]
+
+storage: 
+  outputs: ["chunks", "documents"]
+
+report:
+  output_path: "evals/reports/metadata"

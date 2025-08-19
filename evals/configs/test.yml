@@ -1,7 +1,6 @@
 task: sample
 dataset_path: "data/"
-sec_metadata: ["commission_number"]
-processors: ["tables", "breaks", "toc"]
+processors: ["tables", "breaks"] # toc
 embedding: 
   provider: "openai"
   model: "text-embedding-3-small"

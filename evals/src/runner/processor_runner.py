@@ -1,8 +1,9 @@
-from typing import List, Dict, Any
+from typing import List
 from utils import logger
 from utils.typing import SECDocument
 from utils.typing.chunks import DocumentChunk
-from ..processor import TOCProcessor, TablesProcessor, BreaksProcessor
+from utils.typing.evals.config import Config
+from evals.src.processor import TOCProcessor, TablesProcessor, BreaksProcessor
 
 
 class ProcessorRunner:
@@ -15,9 +16,8 @@ class ProcessorRunner:
             "breaks": BreaksProcessor
         }
     
-    async def run_processors(self, documents: List[SECDocument], processor_names: List[str], config: Dict[str, Any] = None) -> List[DocumentChunk]:
+    async def run_processors(self, documents: List[SECDocument], processor_names: List[str], config: Config = None) -> List[DocumentChunk]:
         """Run the specified processors on documents and return all chunks."""
-        config = config or {}
         all_chunks = []
         
         for processor_name in processor_names:
@@ -27,7 +27,7 @@ class ProcessorRunner:
                 
             logger.info(f"Running {processor_name} processor")
             processor_class = self.processor_map[processor_name]
-            processor = processor_class(config.get(processor_name, {}))
+            processor = processor_class({})
             
             # Process each document and collect chunks
             for document in documents:
