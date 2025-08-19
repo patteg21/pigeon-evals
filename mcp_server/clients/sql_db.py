@@ -11,7 +11,7 @@ class SQLiteError(Exception):
 
 
 class SQLClient:
-    def __init__(self, db_path: str = "data/documents.db"):
+    def __init__(self, db_path: str = "sql/documents.db"):
         """Initialize SQLite client with database path"""
         self.db_path = db_path
         # Ensure directory exists

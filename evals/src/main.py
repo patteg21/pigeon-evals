@@ -8,7 +8,7 @@ from utils import logger
 from utils.typing import DocumentChunk
 
 from loader.data_loader import DataLoader
-from runner import ProcessorRunner, EmbedderRunner
+from runner import ProcessorRunner, EmbedderRunner, StorageRunner
 
 def load_yaml_config(config_path: str) -> List[Dict[str, Any]]:
     """Load YAML configuration file and return list of configs."""
@@ -70,6 +70,7 @@ async def main():
         
         # Run embedding based on config
         embedding_config = config.get('embedding')
+        embedded_chunks = chunks
         if embedding_config and chunks:
             embedder_runner = EmbedderRunner()
             embedded_chunks = await embedder_runner.run_embedder(chunks, embedding_config)
@@ -81,6 +82,18 @@ async def main():
                 logger.info(f"  Embedded Chunk {i+1}: {chunk.type_chunk} - {embedding_len} dimensions")
             if len(embedded_chunks) > 3:
                 logger.info(f"  ... and {len(embedded_chunks) - 3} more embedded chunks")
+
+        # Run storage based on config
+        storage_config = config.get('storage')
+        if storage_config and embedded_chunks:
+            storage_runner = StorageRunner()
+            storage_results = await storage_runner.run_storage(embedded_chunks, storage_config)
+            logger.info(f"Storage complete: {storage_results['stored_vector']} vectors, {storage_results['stored_text']} text chunks")
+            
+            if storage_results['errors']:
+                logger.warning(f"Storage encountered {len(storage_results['errors'])} errors:")
+                for error in storage_results['errors'][:5]:  # Show first 5 errors
+                    logger.warning(f"  - {error}")
 
 
     except yaml.YAMLError as e:

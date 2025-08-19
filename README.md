@@ -66,12 +66,11 @@ Pinecone : Vector DB Store
 
 
 ### Preprocessing
-
 To Run:
 ```bash
-PYTHONPATH=./ python evals/src/main.py --config evals/configs/test.yml
+PYTHONPATH=/Users/patteg/Desktop/development/gp-mcp-demo python evals/src/main.py --config evals/configs/test.yml
 # or
-PYTHONPATH=./ uv run evals/src/main.py --config evals/configs/test.yml 
+PYTHONPATH=/Users/patteg/Desktop/development/gp-mcp-demo uv run evals/src/main.py --config evals/configs/test.yml
 ```
 
 Dimesionality Reduction using PCA but also considered (Uniform Manifold Approximation and Projection - UMAP)[https://umap-learn.readthedocs.io/en/latest/].

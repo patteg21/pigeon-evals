@@ -9,7 +9,11 @@ embedding:
 
 storage: 
   text_store: "sqlite"
-  upload: false
+  sqlite_path: "data/chunks.db"
+  upload: true
+  clear: true
+  vector_db:
+    index_name: "sec-embeddings"
   outputs: ["objects", "ids", "text"]
 
 report:

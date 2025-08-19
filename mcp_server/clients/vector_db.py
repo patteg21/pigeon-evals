@@ -6,10 +6,8 @@ from pinecone import (
     Pinecone
 )
 
-from utils.typing import (
-    VectorObject,
-    EntityType
-)
+from utils.typing import EntityType
+from utils.typing.chunks import DocumentChunk
 
 
 class VectorDBError(Exception):
@@ -121,32 +119,48 @@ class VectorDB:
             raise VectorDBError(f"Query failed: {str(e)}")
 
 
-    def upload(self, vector_object: VectorObject):
-        """Uploads a VectorObject"""
+    def upload(self, chunk: DocumentChunk):
+        """Uploads a DocumentChunk directly to the vector database"""
         
-        if not isinstance(vector_object, VectorObject):
-            raise UploadError("vector_object must be a VectorObject instance")
+        if not isinstance(chunk, DocumentChunk):
+            raise UploadError("chunk must be a DocumentChunk instance")
             
-        if not vector_object.id:
-            raise MetadataFieldError("id", "VectorObject must have a valid id")
+        if not chunk.id:
+            raise MetadataFieldError("id", "DocumentChunk must have a valid id")
             
-        if not vector_object.embeddings:
-            raise MetadataFieldError("embeddings", "VectorObject must have embeddings")
+        if not chunk.embeddding:
+            raise MetadataFieldError("embeddings", "DocumentChunk must have embeddings")
             
-        if not isinstance(vector_object.embeddings, list):
+        if not isinstance(chunk.embeddding, list):
             raise MetadataFieldError("embeddings", "embeddings must be a list of floats")
 
         try:
+
+            metadata = {
+                "entity_type": chunk.type_chunk,
+                "text_preview": chunk.text[:100] if chunk.text else "",
+            }
+            
+            if chunk.document:
+                if hasattr(chunk.document, 'ticker') and chunk.document.ticker:
+                    metadata["ticker"] = str(chunk.document.ticker).upper()
+                if hasattr(chunk.document, 'year') and chunk.document.year:
+                    metadata["year"] = int(chunk.document.year) if isinstance(chunk.document.year, str) and chunk.document.year.isdigit() else chunk.document.year
+                if hasattr(chunk.document, 'form_type') and chunk.document.form_type:
+                    metadata["form_type"] = str(chunk.document.form_type)
+
+                metadata["document_id"] = chunk.document.id
+
             # Prepare vector for upsert
             vector_data = {
-                "id": vector_object.id,
-                "values": vector_object.embeddings,
-                "metadata": vector_object.pinecone_metadata
+                "id": chunk.id,
+                "values": chunk.embeddding,
+                "metadata": metadata
             }
             
             return self.index.upsert(vectors=[vector_data])
         except Exception as e:
-            raise UploadError(f"Failed to upload vector: {str(e)}")
+            raise UploadError(f"Failed to upload chunk: {str(e)}")
     
     
     def query(self, vector, top_k=10, include_metadata=True):

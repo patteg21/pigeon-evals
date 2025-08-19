@@ -1,6 +1,7 @@
-from typing import Optional, List
+from typing import Optional
+from datetime import datetime
 
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
 
 from utils.typing.common import (
     FormType
@@ -9,40 +10,23 @@ from utils.typing.common import (
 class SECDocument(BaseModel):
     ticker: str
     company: Optional[str] = None
+    year: Optional[str] = None
     date: str
     text: str
     path: str
-    report_text: Optional[str] = None   # text that is after the TOC 
-    toc: Optional["SECTable"] = None 
-    tables: Optional[List["SECTable"]] = [] 
     form_type: FormType
+    sec_data: Optional["SECMinedData"] = None
+
+    @field_validator("year", mode="before")
+    def extract_year(cls, v, values):
+        if v is None and "date" in values:
+            try:
+                return datetime.strptime(values["date"], "%Y-%m-%d").year
+            except ValueError:
+                return None
+        return v
+
+
+class SECMinedData(BaseModel):
     period_end: Optional[str | None] = None
     commission_number: Optional[str | None] = None
-    parts: List["SECPart"] = []
-
-
-class SECPart(BaseModel):
-    id: str
-    title: str
-    text: Optional[str] = ""
-    section: Optional[str] = None
-    items: List["SECItem"] = []
-    page_number: int = 0
-    prev_chunk: Optional["SECPart | SECItem"] = None
-    next_chunk: Optional["SECPart | SECItem"] = None
-
-class SECItem(BaseModel):
-    id: str
-    text: Optional[str] = None # SECItems will throw Pydantic Error when added to VectorObject
-    title: str
-    subsection: str
-    page_number: int = 0
-    prev_chunk: Optional["SECPart | SECItem"] = None
-    next_chunk: Optional["SECPart | SECItem"] = None
-
-
-class SECTable(BaseModel):
-    id: str
-    text: str
-    page_number: int
-

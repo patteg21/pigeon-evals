@@ -1,7 +1,7 @@
 from typing import Dict, Any, List
 from utils import logger
 from utils.typing.chunks import DocumentChunk
-from embedder import OpenAIEmbedder
+from embedder import OpenAIEmbedder, HuggingFaceEmbedder
 
 
 class EmbedderRunner:
@@ -10,6 +10,7 @@ class EmbedderRunner:
     def __init__(self):
         self.embedder_map = {
             "openai": OpenAIEmbedder,
+            "huggingface": HuggingFaceEmbedder,
         }
     
     async def run_embedder(self, chunks: List[DocumentChunk], embedding_config: Dict[str, Any]) -> List[DocumentChunk]:
