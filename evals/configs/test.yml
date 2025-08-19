@@ -1,0 +1,26 @@
+task: sample
+dataset_path: "data/"
+sec_metadata: ["commission_number"]
+processors: ["tables", "breaks", "toc"]
+embedding: 
+  provider: "openai"
+  model: "text-embedding-3-small"
+  dimension_reduction: {type: "PCA", dims: 512}   # UMAP / T-SNE
+
+storage: 
+  text_store: "sqlite"
+  vector:
+    upload: false
+    clear: false
+    index: "sec-embedding"
+  outputs: ["chunks"]
+
+report:
+  output_path: "evals/reports/sample"
+
+generator: {provider: "openai", model: "gpt-4o-mini"}
+judge:
+  type: "llm"
+  prompt: "You are a strict grader. Score 1-5 for relevance and faithfulness..."
+  calibration: {gold_fraction: 0.1}
+retrival: {type: "cosine", top_k: 10}

@@ -66,32 +66,12 @@ Pinecone : Vector DB Store
 
 
 ### Preprocessing
+
 To Run:
 ```bash
-python preprocesssing.py 
+PYTHONPATH=./ python evals/src/main.py --config evals/configs/test.yml
 # or
-uv run preprocesssing.py
-```
-
-1. Read SEC filing text files from `data/` directory
-2. Extract metadata using form-specific patterns
-3. Parse table of contents and document structure
-4. Extract and organize content by Parts and Items
-5. Generate embeddings for each text chunk
-6. Apply PCA dimensionality reduction (512 dimensions)
-7. Store vectors in Pinecone and text content in SQLite
-
-One of the most central pieces to this implementation is the use of Typing and Pydantic models in order to ensure consistency when creating Data. The end goal of this is to flag `null` or `None` values in the processing pipelines. Additional this allows code to be easy to understand and reference back to at later points if needed. Since the Code is centered around objects there is a higher focus on telemetry throughout the data processing pipeline. We can understand the data integretity and parsing ability by utilizing Pydantics Type Checking. When the pydantic throws and error, we become aware of a processing aware that would otherwise be allowed. **Additonally I added a cache feature to save some costs on API usage as I run the pipeline and test different pieces.**
-
-The Heirarchy of Objects Follows:
-```bash
-[SECDocumnet] -- [SECTable]
-      |
-      |
-  [SECPart]
-      |
-      |
-  [SECItem]
+PYTHONPATH=./ uv run evals/src/main.py --config evals/configs/test.yml 
 ```
 
 Dimesionality Reduction using PCA but also considered (Uniform Manifold Approximation and Projection - UMAP)[https://umap-learn.readthedocs.io/en/latest/].

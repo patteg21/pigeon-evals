@@ -36,7 +36,7 @@ def test_table_visualization():
         logger.info("✗ Image file not found")
     
     # Test with custom save path (also using images directory)
-    custom_path = "images"
+    custom_path = ".images"
     custom_image_path = create_table_image(test_data, save_path=custom_path)
     logger.info(f"Second image saved to: {custom_image_path}")
     
