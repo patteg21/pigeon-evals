@@ -5,15 +5,15 @@ from typing import List
 
 from utils import logger
 from utils.typing import DocumentChunk
-from evals.src.types import Config
+from evals.src.config_types import YamlConfig
 
 from loader.data_loader import DataLoader
 from runner import ProcessorRunner, EmbedderRunner, StorageRunner
 from parser.parser import SECDataParser
 
-def load_yaml_config(config_path: str) -> List[Config]:
+def load_yaml_config(config_path: str) -> List[YamlConfig]:
     """Load YAML configuration file and return list of configs."""
-    return [Config.from_yaml(config_path)]
+    return [YamlConfig.from_yaml(config_path)]
 
 
 
@@ -82,12 +82,6 @@ async def main():
             embedded_chunks = await embedder_runner.run_embedder(chunks, embedding_config)
             logger.info(f"Embedded {len(embedded_chunks)} chunks")
             
-            # Show sample embedded chunks
-            for i, chunk in enumerate(embedded_chunks[:3]):
-                embedding_len = len(chunk.embeddding) if chunk.embeddding else 0
-                logger.info(f"  Embedded Chunk {i+1}: {chunk.type_chunk} - {embedding_len} dimensions")
-            if len(embedded_chunks) > 3:
-                logger.info(f"  ... and {len(embedded_chunks) - 3} more embedded chunks")
 
         # Run storage based on config
         storage_config = config.storage

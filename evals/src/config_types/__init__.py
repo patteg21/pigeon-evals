@@ -7,5 +7,5 @@ from .config_types import (
     Generator,
     Calibration,
     Judge,
-    Config
+    YamlConfig
 )

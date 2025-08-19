@@ -55,7 +55,7 @@ class Retrieval(BaseModel):
     top_k: int = Field(..., description="Number of top results to retrieve")
 
 
-class Config(BaseModel):
+class YamlConfig(BaseModel):
     run_id: str = Field(uuid4().hex, description="Task name")
     task: str = Field(..., description="Task name")
     dataset_path: str = Field(..., description="Path to dataset")
@@ -68,7 +68,7 @@ class Config(BaseModel):
     retrival: Optional[Retrieval] = Field(None, description="Retrieval configuration")
     
     @classmethod
-    def from_yaml(cls, file_path: Union[str, Path]) -> 'Config':
+    def from_yaml(cls, file_path: Union[str, Path]) -> 'YamlConfig':
         """Load configuration from YAML file"""
         with open(file_path, 'r') as f:
             data = yaml.safe_load(f)

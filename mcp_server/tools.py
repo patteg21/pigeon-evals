@@ -4,7 +4,7 @@ from mcp.server.fastmcp import FastMCP
 from mcp_server.clients import VectorDB, EmbeddingModel, SQLClient
 
 from utils import logger
-from utils.typing import (
+from mcp_server.types.visuals_type import (
     TableImageData,
     ChartData,
     BarChartData,

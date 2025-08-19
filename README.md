@@ -36,6 +36,9 @@ PYTHONPATH=<absolute path to project> python evals/src/main.py --config evals/co
 PYTHONPATH=<absolute path to project> uv run evals/src/main.py --config evals/configs/test.yml
 ```
 
+For example 
+`PYTHONPATH=/Users/patteg/Desktop/development/gp-mcp-demo python evals/src/main.py --config evals/configs/test.yml`
+
 ## Pipeline Architecture
 The pipeline follows a sequential processing flow:
 

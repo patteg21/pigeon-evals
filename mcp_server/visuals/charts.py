@@ -8,7 +8,7 @@ from pathlib import Path
 import uuid
 from typing import List, Union, Optional
 
-from utils.typing import (
+from mcp_server.types.visuals_type import (
     ChartData,
     BarChartData, 
     FinancialChartData,

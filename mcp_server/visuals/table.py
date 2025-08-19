@@ -3,7 +3,7 @@ import uuid
 import plotly.graph_objects as go
 from typing import Optional
 
-from utils.typing import TableImageData
+from mcp_server.types.visuals_type import TableImageData
 
 
 def create_table_image(data: TableImageData, save_path: Optional[str] = "./.images") -> str:

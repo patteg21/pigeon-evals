@@ -2,7 +2,7 @@ from typing import List
 from utils import logger
 from utils.typing import SECDocument
 from utils.typing.chunks import DocumentChunk
-from evals.src.types import Config
+from evals.src.config_types import YamlConfig
 from evals.src.processor import TOCProcessor, TablesProcessor, BreaksProcessor
 
 
@@ -16,7 +16,7 @@ class ProcessorRunner:
             "breaks": BreaksProcessor
         }
     
-    async def run_processors(self, documents: List[SECDocument], processor_names: List[str], config: Config = None) -> List[DocumentChunk]:
+    async def run_processors(self, documents: List[SECDocument], processor_names: List[str], config: YamlConfig = None) -> List[DocumentChunk]:
         """Run the specified processors on documents and return all chunks."""
         all_chunks = []
         
