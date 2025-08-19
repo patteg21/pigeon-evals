@@ -134,7 +134,7 @@ class StorageRunner:
                 doc_data = {
                     "text": chunk.text,
                     "type_chunk": chunk.type_chunk,
-                    "document_id": chunk.document.id if chunk.document else None,
+                    "document_id": chunk.id if chunk.id else None,
                     "embedding_dims": len(chunk.embeddding) if chunk.embeddding else 0
                 }
                 
@@ -159,9 +159,9 @@ class StorageRunner:
         logger.info(f"Generating outputs: {outputs}")
         
         # Get output directory from report config or use default
-        output_dir = Path("evals/outputs")
+        output_dir = Path("evals/reports")
         if "report" in storage_config:
-            report_path = storage_config["report"].get("output_path", "evals/outputs")
+            report_path = storage_config["report"].get("output_path", "evals/reports")
             output_dir = Path(report_path).parent / "outputs"
         
         output_dir.mkdir(parents=True, exist_ok=True)
@@ -190,6 +190,7 @@ class StorageRunner:
             }
             objects_data.append(obj)
         
+        output_dir.mkdir(parents=True, exist_ok=True)
         output_file = output_dir / "chunks_objects.json"
         with open(output_file, 'w') as f:
             json.dump(objects_data, f, indent=2)

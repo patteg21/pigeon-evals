@@ -7,6 +7,8 @@ embedding:
   model: "text-embedding-3-small"
   pooling_strategy: "mean"  # mean, max, weighted, smooth_decay
   dimension_reduction: {type: "PCA", dims: 512}   # UMAP / T-SNE
+  use_threading: true
+  max_workers: 8
 
 storage: 
   text_store: "sqlite"

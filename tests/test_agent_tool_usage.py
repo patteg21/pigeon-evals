@@ -19,7 +19,6 @@ class ToolUsageTracker:
         self.tools_used = set()
         self.expected_tools = {
             "vector_search",
-            "search_on_metadata", 
             "search_by_id",
             "create_table_visualization"
         }
@@ -72,10 +71,6 @@ async def test_agent_tool_discovery_and_usage():
                 "expected_tool": "vector_search"
             },
             {
-                "message": "Use the search_on_metadata tool to find 10K filings for Apple from 2024.",
-                "expected_tool": "search_on_metadata"
-            },
-            {
                 "message": "Create a table visualization showing the top 3 tech companies with their market caps: Apple ($3.5T), Microsoft ($3.0T), NVIDIA ($2.8T). Title it 'Top Tech Companies by Market Cap'.",
                 "expected_tool": "create_table_visualization"
             }
@@ -119,7 +114,7 @@ async def test_agent_tool_discovery_and_usage():
                 logger.info(f"Final attempt result: {final_result.final_output}")
         
         # Final summary
-        logger.info(f"Final tool usage summary:")
+        logger.info("Final tool usage summary:")
         logger.info(f"Expected tools: {tracker.expected_tools}")
         logger.info(f"Tools used: {tracker.tools_used}")
         logger.info(f"Success rate: {len(tracker.tools_used)}/{len(tracker.expected_tools)}")

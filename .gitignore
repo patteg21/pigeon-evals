@@ -16,3 +16,6 @@ logs.log
 .images/
 
 sql
+.sql 
+
+evals/reports

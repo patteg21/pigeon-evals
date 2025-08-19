@@ -6,7 +6,6 @@ from pinecone import (
     Pinecone
 )
 
-from utils.typing import EntityType
 from utils.typing.chunks import DocumentChunk
 
 
@@ -71,52 +70,6 @@ class VectorDB:
         return vector
     
     
-    def retrieve_by_metadata(
-        self,
-        vector: list[float],
-        *,
-        entity_type: EntityType | None = None,
-        ticker: str | None = None,
-        year: str | None = None,
-        top_k: int = 10
-    ):
-        """Search only vectors with metadata.entity_type == entity_type (and optional ticker)."""
-        
-        if not vector or not isinstance(vector, list):
-            raise InvalidFilterError("vector", vector, "Vector must be a non-empty list of floats")
-            
-        if top_k <= 0:
-            raise InvalidFilterError("top_k", top_k, "top_k must be a positive integer")
-        
-        filt = {}
-        if entity_type:
-            if not isinstance(entity_type, EntityType):
-                raise MetadataFieldError("entity_type", f"entity_type must be an EntityType, got {type(entity_type)}")
-            filt["entity_type"] = {"$eq": entity_type.value}
-            
-        if ticker:
-            if not isinstance(ticker, str) or not ticker.strip():
-                raise MetadataFieldError("ticker", "ticker must be a non-empty string")
-            filt["ticker"] = {"$eq": ticker.strip().upper()}
-            
-        if year:
-            try:
-                year_int = int(year)
-                if year_int < 1900 or year_int > 2100:
-                    raise InvalidFilterError("year", year, "Year must be between 1900 and 2100")
-                filt["year"] = {"$eq": year_int}
-            except (ValueError, TypeError):
-                raise InvalidFilterError("year", year, "Year must be a valid integer")
-
-        try:
-            return self.index.query(
-                vector=vector,
-                top_k=top_k,
-                include_metadata=True,
-                filter=filt
-            )
-        except Exception as e:
-            raise VectorDBError(f"Query failed: {str(e)}")
 
 
     def upload(self, chunk: DocumentChunk):
@@ -149,7 +102,7 @@ class VectorDB:
                 if hasattr(chunk.document, 'form_type') and chunk.document.form_type:
                     metadata["form_type"] = str(chunk.document.form_type)
 
-                metadata["document_id"] = chunk.document.id
+                metadata["document_id"] = chunk.id
 
             # Prepare vector for upsert
             vector_data = {

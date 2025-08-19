@@ -2,7 +2,7 @@ from typing import List, Dict, Any
 from utils import logger
 from utils.typing import SECDocument
 from utils.typing.chunks import DocumentChunk
-from processor import TOCProcessor, TablesProcessor, BreaksProcessor
+from ..processor import TOCProcessor, TablesProcessor, BreaksProcessor
 
 
 class ProcessorRunner:

@@ -55,24 +55,34 @@ Pipeline behavior is controlled via YAML config files in `evals/configs/`:
 ```yaml
 task: sample
 dataset_path: "data/"
+sec_metadata: ["commission_number"]
 processors: ["tables", "breaks", "toc"]
 embedding: 
   provider: "openai"
   model: "text-embedding-3-small"
-  dimension_reduction: {type: "PCA", dims: 512}
+  pooling_strategy: "mean"  # mean, max, weighted, smooth_decay
+  dimension_reduction: {type: "PCA", dims: 512}   # UMAP / T-SNE
+  use_threading: true
+  max_workers: 8
+
 storage: 
   text_store: "sqlite"
-  vector_db: {index_name: "sec-embeddings"}
-  upload: true
-  clear: false
+  vector:
+    upload: false
+    clear: false
+    index: "sec-embedding"
+  outputs: ["chunks"]
+
+report:
+  output_path: "evals/reports/sample"
 ```
 
 ## Usage
 
 ```bash
-PYTHONPATH=/Users/patteg/Desktop/development/gp-mcp-demo python evals/src/main.py --config evals/configs/test.yml
+PYTHONPATH=<absolute path to project> python evals/src/main.py --config evals/configs/test.yml
 # or
-PYTHONPATH=/Users/patteg/Desktop/development/gp-mcp-demo uv run evals/src/main.py --config evals/configs/test.yml
+PYTHONPATH=<absolute path to project> uv run evals/src/main.py --config evals/configs/test.yml
 ```
 
 ## Dimensionality Reduction
@@ -150,3 +160,10 @@ python -m pytest tests/test_vector_search_relevancy.py -v
 
 
 ### TODO's
+
+**Testing** - Add more tests to the eval pipeline
+**Remove Legacy Code** - There are some parts of the codebase that I migrated away from and need to work
+**Auto Run Naming** - In my evals, auto creating different runs and names for runs to better segregate testing
+**Auto Eval** - Implementing a LLM Judge Model into the processing pipeline similiar to what exists in the Test case
+**SEC Data Parsing** - Implement some REGEX to auto collect some basic information and attach to the document, such as Commission number
+**MCP Tools** - Add more tools to the MCP Server as it is rather limited currently

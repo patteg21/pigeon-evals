@@ -5,7 +5,6 @@ from mcp_server.clients import VectorDB, EmbeddingModel, SQLClient
 
 from utils import logger
 from utils.typing import (
-    EntityType,
     TableImageData,
 )
 from mcp_server.visuals.table import create_table_image
@@ -54,21 +53,6 @@ def init_mcp_tools(mcp: FastMCP):
             return {"error": str(e), "matches": []}
 
 
-    @mcp.tool()
-    async def search_on_metadata(
-            query: str, 
-            entity_type: EntityType | None = None, 
-            year: str| None = None,
-            ticker: str | None =None
-        ):
-        try:
-            vector = await embedding_model.create_pinecone_embeddings(query)
-            response = vector_db_client.retrieve_by_metadata(vector, entity_type=entity_type, year=year, ticker=ticker)
-            response = _enrich_with_text(response)
-            return response
-        except Exception as e:
-            logger.error(f"Error in search_on_metadata: {e}")
-            return {"error": str(e), "matches": []}
 
 
     @mcp.tool()
