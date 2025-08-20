@@ -1,36 +1,17 @@
 from mcp.server.fastmcp import FastMCP
 
-from shared.clients import VectorDB, EmbeddingModel, SQLClient
+from evals.src.storage.vector import PineconeDB
+from evals.src.storage.text import SQLiteDB
+
+from evals.src.embedder import OpenAIEmbedder
 
 from evals.src.utils import logger
 
 def init_search_tools(mcp: FastMCP):
-    vector_db_client: VectorDB = VectorDB()
-    embedding_model: EmbeddingModel = EmbeddingModel(pca_path="data/artifacts/pca_512.joblib")
-    sql_client: SQLClient = SQLClient()
+    pinecone_client: PineconeDB = PineconeDB()
+    embedding_model: OpenAIEmbedder = OpenAIEmbedder(pca_path="data/artifacts/pca_512.joblib")
+    sql_client: SQLiteDB = SQLiteDB()
     
-    if embedding_model.pca_reducer:
-        logger.info("PCA reducer loaded for query-time dimensionality reduction.")
-    else:
-        logger.warning("PCA not loaded — using identity (no reduction).")
-
-    def _enrich_with_text(response):
-        """Enrich search results with text content from SQLite"""
-        if hasattr(response, 'matches'):
-            for match in response.matches:
-                # Handle Pinecone match object properly
-                metadata = getattr(match, 'metadata', {}) or {}
-                document_id = metadata.get('document_id')
-                if document_id:
-                    try:
-                        doc = sql_client.retrieve_document(document_id)
-                        if doc:
-                            metadata['text'] = doc['text']
-                    except Exception as e:
-                        logger.error(f"Failed to retrieve text for document {document_id}: {e}")
-                        metadata['text'] = ""
-        return response
-
 
     logger.info("Adding Tools to MCP Server...")
 
@@ -56,12 +37,11 @@ def init_search_tools(mcp: FastMCP):
             
             # Query with filters if any are specified
             if filters:
-                response = vector_db_client.query(vec, top_k=top_k, include_metadata=True, filter=filters)
+                response = pinecone_client.query(vec, top_k=top_k, include_metadata=True, filter=filters)
             else:
-                response = vector_db_client.query(vec, top_k=top_k, include_metadata=True)
-            response = _enrich_with_text(response)
+                response = pinecone_client.query(vec, top_k=top_k, include_metadata=True)
             
-            # Convert Pinecone response to JSON-serializable format
+            # Convert Pinecone response to JSON-serializable format and enrich with SQL text
             result = {
                 "matches": []
             }
@@ -70,16 +50,18 @@ def init_search_tools(mcp: FastMCP):
                 for match in response.matches:
                     metadata = getattr(match, 'metadata', {}) or {}
                     
-                    # Get full text from SQL database using document_id from metadata
+                    # Replace any existing text with full text from SQL database using document_id
                     document_id = metadata.get('document_id')
                     if document_id:
                         try:
                             doc = sql_client.retrieve_document(document_id)
                             if doc and doc.get('text'):
-                                metadata['text'] = doc['text']
+                                metadata['text'] = doc['text']  # Replace with full text from SQL
+                            else:
+                                metadata['text'] = ""  # Clear if no text found
                         except Exception as e:
                             logger.error(f"Failed to retrieve text for document {document_id}: {e}")
-                            # Keep existing text if retrieval fails
+                            metadata['text'] = ""  # Clear on error
                     
                     match_dict = {
                         "id": getattr(match, 'id', None),
@@ -100,7 +82,7 @@ def init_search_tools(mcp: FastMCP):
     def search_by_id(vector_id: str):
         """This is meant for the Agent to Be able to Chain and `scroll` by content proximity"""
         try:
-            response = vector_db_client.retrieve_from_id(vector_id=vector_id)
+            response = pinecone_client.retrieve_from_id(vector_id=vector_id)
             
             # Convert to JSON-serializable format without embeddings
             result = {

@@ -20,6 +20,7 @@ class SQLiteDB(TextStorageBase):
         Path(db_path).parent.mkdir(parents=True, exist_ok=True)
         self._initialize_db()
     
+
     def _initialize_db(self):
         """Initialize database with required tables"""
         with self._get_connection() as conn:
@@ -68,6 +69,7 @@ class SQLiteDB(TextStorageBase):
         except Exception as e:
             raise SQLiteError(f"Failed to store document {doc_id}: {str(e)}")
     
+
     def retrieve_document(self, doc_id: str) -> Optional[Dict[str, Any]]:
         """Retrieve document by ID"""
         try:
@@ -83,6 +85,7 @@ class SQLiteDB(TextStorageBase):
         except Exception as e:
             raise SQLiteError(f"Failed to retrieve document {doc_id}: {str(e)}")
     
+
     def retrieve_documents(self, doc_ids: List[str]) -> List[Dict[str, Any]]:
         """Retrieve multiple documents by IDs"""
         if not doc_ids:
@@ -113,6 +116,7 @@ class SQLiteDB(TextStorageBase):
         except Exception as e:
             raise SQLiteError(f"Failed to delete document {doc_id}: {str(e)}")
     
+
     def get_document_count(self) -> int:
         """Get total number of documents"""
         try:
@@ -124,6 +128,7 @@ class SQLiteDB(TextStorageBase):
         except Exception as e:
             raise SQLiteError(f"Failed to get document count: {str(e)}")
     
+
     def clear_all(self) -> bool:
         """Clear all documents from database"""
         try:

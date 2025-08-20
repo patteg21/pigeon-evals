@@ -15,21 +15,6 @@ class LocalFileStore(FileStorageBase):
         self.base_path = Path(base_path)
         self.base_path.mkdir(parents=True, exist_ok=True)
     
-    def save_files(self, config, data=None):
-        """Save files - delegates to specific export methods"""
-        pass
-    
-    def load_files(self, config):
-        """Not implemented for simple file store"""
-        pass
-    
-    def delete_files(self, config):
-        """Not implemented for simple file store"""
-        pass
-    
-    def list_files(self, config):
-        """Not implemented for simple file store"""
-        pass
     
     def export_chunks(self, chunks: List[DocumentChunk]) -> bool:
         """Export chunks as JSON objects"""

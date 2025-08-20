@@ -10,15 +10,16 @@ from utils.types.visuals_type import (
     BarChartData
 )
 from evals.src.utils import logger
-from shared.clients import EmbeddingModel, SQLClient
+from evals.src.embedder import OpenAIEmbedder
+from evals.src.storage.text import SQLiteDB
 
 from .charts import create_bar_chart, create_financial_chart, create_line_chart
 from .table import create_table_image
 
 
 def init_visual_tools(mcp: FastMCP):
-    embedding_model: EmbeddingModel = EmbeddingModel(pca_path="data/artifacts/pca_512.joblib")
-    sql_client: SQLClient = SQLClient()
+    embedding_model: OpenAIEmbedder = OpenAIEmbedder(pca_path="data/artifacts/pca_512.joblib")
+    sql_client: SQLiteDB = SQLiteDB()
     
     if embedding_model.pca_reducer:
         logger.info("PCA reducer loaded for query-time dimensionality reduction.")

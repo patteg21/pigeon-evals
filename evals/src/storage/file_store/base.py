@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
-from typing import Any, List
-from pathlib import Path
+
+from evals.src.utils.types import DocumentChunk, SECDocument
 
 
 class FileStorageError(Exception):
@@ -12,21 +12,13 @@ class FileStorageBase(ABC):
     """Abstract base class for file storage implementations"""
     
     @abstractmethod
-    def save_files(self, config: Any, data: Any = None) -> bool:
+    def export_chunks(self, data: DocumentChunk = None) -> bool:
         """Save files based on configuration"""
-        pass
-    
+        raise NotImplementedError
+
     @abstractmethod
-    def load_files(self, config: Any) -> Any:
-        """Load files based on configuration"""
-        pass
+    def export_documents(self, data: SECDocument = None) -> bool:
+        """Save files based on configuration"""
+        
+        raise NotImplementedError
     
-    @abstractmethod
-    def delete_files(self, config: Any) -> bool:
-        """Delete files based on configuration"""
-        pass
-    
-    @abstractmethod
-    def list_files(self, config: Any) -> List[Path]:
-        """List files based on configuration"""
-        pass
