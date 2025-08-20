@@ -1,0 +1,2 @@
+Implement Robust test for different segments of the Process
+Test cases should also test the pydantic models to validate bad data

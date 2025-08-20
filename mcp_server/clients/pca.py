@@ -26,7 +26,7 @@ class PCALoader:
     """
     Train once, save, and later load to transform new embeddings consistently.
     """
-    def __init__(self, path: str = "artifacts/sec_pca_512.joblib", target_dim: int = 512, seed: int = 42):
+    def __init__(self, path: str = "artifacts/pca_512.joblib", target_dim: int = 512, seed: int = 42):
         self.path = path
         self.target_dim = target_dim
         self.seed = seed

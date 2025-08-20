@@ -181,7 +181,6 @@ python -m pytest tests/test_table_visualization.py -v
 python -m pytest tests/test_chart_visualizations.py -v
 python -m pytest tests/test_pca_loader.py -v
 python -m pytest tests/test_agent_tool_usage.py -v
-python -m pytest tests/test_vector_search_relevancy.py -v
 ```
 
 - **`test_mcp.py`** - MCP server startup and tool registration

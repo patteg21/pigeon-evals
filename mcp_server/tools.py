@@ -16,7 +16,7 @@ from mcp_server.visuals.charts import create_line_chart, create_bar_chart, creat
 
 def init_mcp_tools(mcp: FastMCP):
     vector_db_client: VectorDB = VectorDB()
-    embedding_model: EmbeddingModel = EmbeddingModel(pca_path="artifacts/sec_pca_512.joblib")
+    embedding_model: EmbeddingModel = EmbeddingModel(pca_path="artifacts/pca_512.joblib")
     sql_client: SQLClient = SQLClient()
     
     if embedding_model.pca_reducer:
