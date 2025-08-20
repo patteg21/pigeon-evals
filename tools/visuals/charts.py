@@ -15,7 +15,7 @@ from mcp_server.types.visuals_type import (
     DataPoint,
     FinancialDataPoint
 )
-from utils import logger
+from evals.src.utils import logger
 
 def create_line_chart(data: ChartData, save_path: Optional[str] = "./.images") -> str:
     """

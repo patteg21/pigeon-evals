@@ -1,8 +1,7 @@
 from typing import List
-from utils import logger
-from utils.typing import SECDocument
-from utils.typing.chunks import DocumentChunk
-from evals.src.config_types import YamlConfig
+
+from evals.src.utils import logger
+from evals.src.utils.types import SECDocument, DocumentChunk, YamlConfig
 from evals.src.processor import TOCProcessor, TablesProcessor, BreaksProcessor
 
 

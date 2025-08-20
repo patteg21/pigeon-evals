@@ -2,9 +2,9 @@ import re
 from typing import List, Any
 from uuid import uuid4
 
-from utils.typing import SECDocument, SECTable
-from utils.typing.chunks import DocumentChunk
-from utils import logger
+from evals.src.utils.types import SECDocument, SECTable
+from evals.src.utils.types.chunks import DocumentChunk
+from evals.src.utils import logger
 from .base import BaseProcessor
 
 

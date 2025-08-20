@@ -6,7 +6,7 @@ from unittest.mock import patch
 
 from mcp_server.clients import EmbeddingModel
 from mcp_server.clients.pca import PCALoader
-from utils import logger
+from evals.src.utils import logger
 
 class TestPCALoader:
     """Test cases for PCALoader with embedding vector generation"""
@@ -171,7 +171,7 @@ class TestPCALoader:
         and using it to transform sentence embeddings (like in tools.py).
         This test MUST fail if the artifacts PCA model cannot be loaded.
         """
-        artifacts_pca_path = "artifacts/pca_512.joblib"
+        artifacts_pca_path = "data/artifacts/pca_512.joblib"
         
         mock_embedding = np.random.rand(1536).tolist()
         
@@ -219,7 +219,7 @@ class TestPCALoader:
             with patch.object(embedding_model, '_embeddings', return_value=mock_embedding):
                 # Simulate the tools.py workflow - PCA MUST load successfully
                 try:
-                    reducer = PCALoader(path="artifacts/pca_512.joblib").load()
+                    reducer = PCALoader(path="data/artifacts/pca_512.joblib").load()
                     logger.info("PCA reducer loaded for query-time dimensionality reduction.")
                 except Exception as e:
                     pytest.fail(f"PCA loading failed in tools.py workflow: {e}")

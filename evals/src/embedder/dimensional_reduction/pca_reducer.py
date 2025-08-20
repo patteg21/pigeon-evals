@@ -8,7 +8,7 @@ import sklearn
 
 from .base import BaseDimensionalReducer
 
-from utils import logger
+from evals.src.utils import logger
 
 class PCArtifactNotFoundError(FileNotFoundError):
     """Raised when the expected PCA artifact file is not found."""

@@ -4,11 +4,11 @@ import asyncio
 import time
 import numpy as np
 import diskcache as dc
-from utils.typing.chunks import DocumentChunk
-from utils.typing import Pooling
-from utils import logger
+from evals.src.utils.types.chunks import DocumentChunk
+from evals.src.utils.types import Pooling
+from evals.src.utils import logger
 
-cache = dc.Cache(".cache")
+cache = dc.Cache("data/.cache")
 
 
 class BaseEmbedder(ABC):

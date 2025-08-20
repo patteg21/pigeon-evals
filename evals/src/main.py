@@ -3,9 +3,8 @@ import asyncio
 from pathlib import Path
 from typing import List
 
-from utils import logger
-from utils.typing import DocumentChunk
-from evals.src.config_types import YamlConfig
+from evals.src.utils import logger
+from evals.src.utils.types import DocumentChunk, YamlConfig
 
 from loader.data_loader import DataLoader
 from runner import ProcessorRunner, EmbedderRunner, StorageRunner

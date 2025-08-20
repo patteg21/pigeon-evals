@@ -1,8 +1,8 @@
 from typing import Dict, Any, List
 import torch
 from sentence_transformers import SentenceTransformer
-from utils.typing.chunks import DocumentChunk
-from utils import logger
+from evals.src.utils.types.chunks import DocumentChunk
+from evals.src.utils import logger
 from .base import BaseEmbedder
 
 

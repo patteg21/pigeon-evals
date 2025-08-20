@@ -3,7 +3,7 @@ import pytest
 
 from mcp_server.visuals.table import create_table_image
 from mcp_server.types.visuals_type import TableImageData
-from utils import logger
+from evals.src.utils import logger
 
 
 def test_table_visualization():

@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Dict, Any, Optional
 import os
 
 from dotenv import load_dotenv
@@ -6,10 +6,11 @@ from pinecone import (
     Pinecone
 )
 
-from utils.typing.chunks import DocumentChunk
+from evals.src.utils.types.chunks import DocumentChunk
+from .base import VectorStorageBase, VectorStorageError
 
 
-class VectorDBError(Exception):
+class VectorDBError(VectorStorageError):
     """Base exception for VectorDB operations"""
     pass
 
@@ -51,7 +52,7 @@ load_dotenv()
 
 
 
-class VectorDB:
+class PineconeDB(VectorStorageBase):
     def __init__(self, index_name="sec-embeddings"):
         self.client = Pinecone(api_key=os.getenv("PINECONE_API_KEY"))
         self.index = self.client.Index(index_name)
@@ -116,7 +117,7 @@ class VectorDB:
             raise UploadError(f"Failed to upload chunk: {str(e)}")
     
     
-    def query(self, vector, top_k=10, include_metadata=True, filter=None):
+    def query(self, vector: List[float], top_k: int = 10, include_metadata: bool = True, filter: Optional[Dict[str, Any]] = None):
         """Query the index for similar vectors"""
         if not vector or not isinstance(vector, list):
             raise InvalidFilterError("vector", vector, "Vector must be a non-empty list of floats")

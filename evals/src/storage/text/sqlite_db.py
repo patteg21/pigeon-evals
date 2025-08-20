@@ -4,14 +4,16 @@ from typing import Optional, List, Dict, Any
 from contextlib import contextmanager
 from pathlib import Path
 
+from .base import TextStorageBase, TextStorageError
 
-class SQLiteError(Exception):
-    """Base exception for SQLite operations"""
+
+class SQLiteError(TextStorageError):
+    """SQLite-specific exception for operations"""
     pass
 
 
-class SQLClient:
-    def __init__(self, db_path: str = ".sql/chunks.db"):
+class SQLiteDB(TextStorageBase):
+    def __init__(self, db_path: str = "data/.sql/chunks.db"):
         """Initialize SQLite client with database path"""
         self.db_path = db_path
         # Ensure directory exists

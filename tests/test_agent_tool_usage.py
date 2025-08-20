@@ -4,7 +4,7 @@ import asyncio
 from dotenv import load_dotenv
 from agents.mcp import MCPServerStdio
 from agents import Agent, Runner, set_default_openai_key
-from utils import logger
+from evals.src.utils import logger
 
 load_dotenv()
 

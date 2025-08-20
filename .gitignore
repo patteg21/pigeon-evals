@@ -15,7 +15,7 @@ logs.log
 .cache/
 .images/
 
-sql
+
 .sql 
 
 evals/reports
