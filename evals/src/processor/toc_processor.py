@@ -1,8 +1,8 @@
 import re
-from typing import List, Any
+from typing import List, Dict
 from uuid import uuid4
 
-from evals.src.utils.types import SECDocument, SECTable
+from evals.src.utils.types import SECDocument
 from evals.src.utils.types.chunks import DocumentChunk
 from evals.src.utils import logger
 from .base import BaseProcessor
@@ -21,77 +21,70 @@ class TOCProcessor(BaseProcessor):
         """Extract TOC and return TOC chunks."""
         logger.info(f"Processing TOC for document {document.ticker}")
 
-        raise NotImplementedError
-
+        # Split document by pages and get report text (all pages except first)
+        pages = document.text.split("[PAGE BREAK]")
+        toc_page = pages[1]
+        report_text = "[PAGE BREAK]".join(pages[1:]) if len(pages) > 1 else ""
         
-        # Extract tables first to find TOC
-        tables = self._extract_tables(document)
-        toc = self._find_toc_in_tables(tables)
+        toc_structure = self._parse_out_toc(toc_page)
         
         chunks = []
-        if toc:
-            # Create chunk for TOC
-            chunk = DocumentChunk(
-                id=uuid4().hex,
-                text=toc.text,
-                type_chunk="toc",
-                document=document
-            )
-            chunks.append(chunk)
-            logger.info("Found and extracted TOC chunk")
-        else:
-            logger.warning(f"No TOC found for document {document.ticker}")
-            
-        return chunks
         
-    ROMAN_PART = re.compile(r"(PART\s+[IVXLCDM]+\.?)", re.IGNORECASE)
-    ITEM_ROW   = re.compile(r"(Item\s+\d+[A-Z]?\.)\s*\|\s*(.*?)\s*\|\s*(\d+)", re.IGNORECASE)
-    def parse_table_of_contents(self, document: SECDocument) -> None:
-        toc = document.toc.text
-
-        # TODO: FIX The OCR or handle with REGEX 
-        toc = toc.replace("P | art | I", "Part I")
-        toc = toc.replace("P | art | II", "Part II")
-        toc = toc.replace("P | art | III", "Part III")
-        toc = toc.replace("P | art | IV", "Part IV")
-
-        chunks = self.ROMAN_PART.split(toc) 
-
-        parts: List[Any] = []
-        items: List[Any] = []
-
-        it = iter(chunks)
-        for chunk in it:
-            chunk = chunk.strip()
-            if not chunk:
-                continue
-
-            if self.ROMAN_PART.fullmatch(chunk):
-                section = chunk.upper().rstrip(".")
-                body: str = (next(it, "") or "").strip()
-
-                sec_part = {
-                    "id": uuid4().hex,
-                    "title": section,         # e.g. "PART I"
-                    "section": section
-                }
-                parts.append(sec_part)
-                document.parts.append(sec_part)
-
-                for m in self.ITEM_ROW.finditer(body):
-                    subsection = m.group(1).strip()   # "Item 1."
-                    title = m.group(2).strip()        # "Financial Statements"
-                    _page = m.group(3).strip()         # "3"
-
-                    sec_item = {
-                        "id":uuid4().hex,
-                        "title": title,
-                        "subsection": subsection,
-                    }
-                    sec_part.items.append(sec_item)
-                    items.append(sec_item)
-
-
+        # Create TOC chunk
+        toc_chunk = DocumentChunk(
+            id=uuid4().hex,
+            text=toc_page,
+            type_chunk="toc",
+            document=document
+        )
+        chunks.append(toc_chunk)
+        
+        # Extract text sections for each part and item
+        for part_name, items in toc_structure.items():
+            # Find part text in report
+            part_text = self._extract_section_text(report_text, part_name, items[0] if items else None)
+            
+            if part_text:
+                part_chunk = DocumentChunk(
+                    id=uuid4().hex,
+                    text=part_text,
+                    type_chunk="part",
+                    document=document
+                )
+                chunks.append(part_chunk)
+            
+            # Extract text for each item
+            for i, item in enumerate(items):
+                next_item = items[i + 1] if i + 1 < len(items) else None
+                item_text = self._extract_section_text(report_text, item, next_item)
+                
+                if item_text:
+                    item_chunk = DocumentChunk(
+                        id=uuid4().hex,
+                        text=item_text,
+                        type_chunk="item",
+                        document=document
+                    )
+                    chunks.append(item_chunk)
+        
+        logger.info(f"Extracted {len(chunks)} chunks from TOC and sections")
+        return chunks
+    
+    def _extract_section_text(self, report_text: str, section_label: str, next_section: str = None) -> str:
+        """Extract text for a specific section using fuzzy matching."""
+        start, _ = self._find_span_fuzzy(report_text, section_label)
+        if start == -1:
+            return ""
+        
+        # Find end position
+        if next_section:
+            end, _ = self._find_span_fuzzy(report_text, next_section)
+            if end == -1 or end <= start:
+                end = len(report_text)
+        else:
+            end = len(report_text)
+        
+        return report_text[start:end].strip()
 
     def _compile_fuzzy(self, label: str) -> re.Pattern:
         base = re.sub(r'[\s|]+', '', label.strip())  
@@ -109,82 +102,82 @@ class TOCProcessor(BaseProcessor):
         return (m.start(), m.end()) if m else (-1, -1)
 
 
-    def extract_item_sections(self, document: SECDocument) -> None:
+    def extract_item_sections(self, document: SECDocument, report_text: str) -> None:
         """
         Build a single linked sequence across parts and items via prev_chunk/next_chunk.
         Also sets page_number for both parts and items based on [PAGE_BREAK] markers,
         and fills item.text spans. Handles OCR like 'I TEM 11.' by fuzzy matching.
         """
-        body = document.report_text or ""
-        if not body or not getattr(document, "parts", None):
+        if not report_text or not getattr(document, "parts", None):
             return
 
         positions: list[tuple[int, object]] = []
 
         for part in document.parts or []:
-            if not getattr(part, "items", None):
+            if not part.get("items"):
                 continue
 
             # Locate PART header fuzzily (handles 'P A R T  I', etc.)
-            part_start, _part_end = self._find_span_fuzzy(body, part.title or part.section or "PART")
+            part_start, _part_end = self._find_span_fuzzy(report_text, part.get("title") or part.get("section") or "PART")
             if part_start == -1:
                 part_start, _part_end = (0, 0)  # fallback
 
-            part.page_number = self._compute_page_number(body, part_start)
+            part["page_number"] = self._compute_page_number(report_text, part_start)
             positions.append((part_start, part))
 
             # Preface = between PART header and first Item (fuzzy)
-            if part.items:
-                f0 = part.items[0]
-                first_item_start, _ = self._find_span_fuzzy(body, f0.subsection)
+            if part["items"]:
+                f0 = part["items"][0]
+                first_item_start, _ = self._find_span_fuzzy(report_text, f0["subsection"])
                 if first_item_start != -1 and first_item_start > part_start:
-                    part.text = body[part_start:first_item_start].strip()
+                    part["text"] = report_text[part_start:first_item_start].strip()
 
             # Items
-            for j, item in enumerate(part.items):
-                start, _ = self._find_span_fuzzy(body, item.subsection)
+            for j, item in enumerate(part["items"]):
+                start, _ = self._find_span_fuzzy(report_text, item["subsection"])
                 if start == -1:
                     continue
 
-                if j + 1 < len(part.items):
+                if j + 1 < len(part["items"]):
                     # end at next item's fuzzy start
-                    next_label = part.items[j + 1].subsection
-                    end, _dummy = self._find_span_fuzzy(body, next_label)
+                    next_label = part["items"][j + 1]["subsection"]
+                    end, _dummy = self._find_span_fuzzy(report_text, next_label)
                     if end == -1 or end <= start:
-                        end = len(body)
+                        end = len(report_text)
                 else:
-                    end = len(body)
+                    end = len(report_text)
 
-                item.text = body[start:end].strip()
-                item.page_number = self._compute_page_number(body, start)
+                item["text"] = report_text[start:end].strip()
+                item["page_number"] = self._compute_page_number(report_text, start)
                 positions.append((start, item))
 
 
-
-    def _extract_tables(self, document: SECDocument) -> List[SECTable]:
-        """Extract all tables from document text."""
-        TABLE_RE = re.compile(r"\[TABLE_START\](.*?)\[[ ]*TABLE_END\]", re.DOTALL | re.IGNORECASE)
-        # TOC found on second page
-        body: str = document.text.split("[PAGE BREAK]")[1]
-
-        tables: List[SECTable] = []
-
-        for m in TABLE_RE.finditer(body):
-            start_pos = m.start()
-            text = (m.group(1) or "").strip()
-            page = self._compute_page_number(body, start_pos)
-
-            tables.append(SECTable(
-                id=uuid4().hex,
-                page_number=page,
-                text=text,
-            ))
-
-        return tables
     
-    def _find_toc_in_tables(self, tables: List[SECTable]) -> SECTable:
+    PARSE_PROMPT = """
+Given a TOC clean the page to return a JSON of the Structure of the Document
+
+Sample Output: 
+{
+    "Part I": [
+        "Item 1.", 
+        ...
+    ],
+    "Part II": [
+    
+    ]
+}
+
+"""
+
+    def _parse_out_toc(self, toc_page: str) -> Dict[str, List[str]]:
         """Find the table of contents in the list of tables."""
-        for table in tables:
-            if "Item 1." in table.text:
-                return table
-        return None
+        from evals.src.utils.llm import OpenAILLM
+
+        llm_client: OpenAILLM = OpenAILLM()
+
+        response = llm_client.generate_response(
+            query=toc_page,
+            prompt=self.PARSE_PROMPT
+        ) 
+
+        return response

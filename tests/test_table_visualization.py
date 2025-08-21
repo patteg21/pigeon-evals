@@ -1,8 +1,8 @@
 import os
 import pytest
 
-from mcp_server.visuals.table import create_table_image
-from mcp_server.types.visuals_type import TableImageData
+from tools.visuals.table import create_table_image
+from utils.types.visuals_type import TableImageData
 from evals.src.utils import logger
 
 

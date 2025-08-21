@@ -2,8 +2,8 @@ import os
 import pytest
 from datetime import datetime, timedelta
 
-from mcp_server.visuals.charts import create_line_chart, create_bar_chart, create_financial_chart
-from mcp_server.types.visuals_type import ChartData, BarChartData, FinancialChartData, DataPoint, FinancialDataPoint
+from tools.visuals.charts import create_line_chart, create_bar_chart, create_financial_chart
+from utils.types.visuals_type import ChartData, BarChartData, FinancialChartData, DataPoint, FinancialDataPoint
 from evals.src.utils import logger
 
 

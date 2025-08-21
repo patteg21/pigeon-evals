@@ -4,12 +4,12 @@ import os
 import tempfile
 from unittest.mock import patch
 
-from mcp_server.clients import EmbeddingModel
-from mcp_server.clients.pca import PCALoader
+from evals.src.embedder import OpenAIEmbedder
+from evals.src.embedder.dimensional_reduction import PCAReducer
 from evals.src.utils import logger
 
-class TestPCALoader:
-    """Test cases for PCALoader with embedding vector generation"""
+class TestPCAReducer:
+    """Test cases for PCAReducer with embedding vector generation"""
 
     @pytest.fixture
     def sample_embeddings(self):
@@ -34,17 +34,17 @@ class TestPCALoader:
 
     @pytest.fixture
     def pca_loader(self, temp_pca_path):
-        """Create PCALoader instance with temporary path"""
-        return PCALoader(path=temp_pca_path, target_dim=512, seed=42)
+        """Create PCAReducer instance with temporary path"""
+        return OpenAIEmbedder(path=temp_pca_path, target_dim=512, seed=42)
 
     @pytest.fixture
     async def embedding_model(self):
-        """Create EmbeddingModel instance"""
+        """Create OpenAIEmbedder instance"""
         with patch.dict(os.environ, {'OPENAI_API_KEY': 'test-key'}):
-            return EmbeddingModel()
+            return OpenAIEmbedder()
 
     def test_pca_loader_initialization(self, pca_loader):
-        """Test PCALoader initialization"""
+        """Test PCAReducer initialization"""
         assert pca_loader.target_dim == 512
         assert pca_loader.seed == 42
         assert pca_loader.model is None
@@ -89,7 +89,7 @@ class TestPCALoader:
         assert os.path.exists(temp_pca_path)
         
         # Load in new instance
-        new_loader = PCALoader(path=temp_pca_path)
+        new_loader = PCAReducer(path=temp_pca_path)
         new_loader.load()
         
         assert new_loader.model is not None
@@ -105,13 +105,13 @@ class TestPCALoader:
     async def test_sentence_embedding_with_pca(self, sample_sentence, temp_pca_path):
         """
         Integration test: Generate embedding for sentence and apply PCA transformation.
-        This test requires both EmbeddingModel and PCALoader working together.
+        This test requires both OpenAIEmbedder and PCAReducer working together.
         """
         # Mock the OpenAI API call to avoid real API usage
         mock_embedding = np.random.rand(1536).tolist()
         
         with patch.dict(os.environ, {'OPENAI_API_KEY': 'test-key'}):
-            embedding_model = EmbeddingModel()
+            embedding_model = OpenAIEmbedder()
             
             # Mock the embedding creation
             with patch.object(embedding_model, '_embeddings', return_value=mock_embedding):
@@ -124,7 +124,7 @@ class TestPCALoader:
                 training_embeddings.append(sentence_embedding)
                 
                 # Initialize and train PCA
-                pca_loader = PCALoader(path=temp_pca_path, target_dim=512, seed=42)
+                pca_loader = PCAReducer(path=temp_pca_path, target_dim=512, seed=42)
                 pca_loader.fit(training_embeddings)
                 
                 # Transform the sentence embedding
@@ -176,7 +176,7 @@ class TestPCALoader:
         mock_embedding = np.random.rand(1536).tolist()
         
         with patch.dict(os.environ, {'OPENAI_API_KEY': 'test-key'}):
-            embedding_model = EmbeddingModel()
+            embedding_model = OpenAIEmbedder()
             
             with patch.object(embedding_model, '_embeddings', return_value=mock_embedding):
                 # Generate embedding for sentence
@@ -184,7 +184,7 @@ class TestPCALoader:
                 
                 # Load pre-trained PCA model from artifacts - MUST succeed or test fails
                 try:
-                    pca_loader = PCALoader(path=artifacts_pca_path).load()
+                    pca_loader = PCAReducer(path=artifacts_pca_path).load()
                 except Exception as e:
                     pytest.fail(f"Failed to load pre-trained PCA model from {artifacts_pca_path}: {e}")
                 
@@ -214,12 +214,12 @@ class TestPCALoader:
         mock_embedding = np.random.rand(1536).tolist()
         
         with patch.dict(os.environ, {'OPENAI_API_KEY': 'test-key'}):
-            embedding_model = EmbeddingModel()
+            embedding_model = OpenAIEmbedder()
             
             with patch.object(embedding_model, '_embeddings', return_value=mock_embedding):
                 # Simulate the tools.py workflow - PCA MUST load successfully
                 try:
-                    reducer = PCALoader(path="data/artifacts/pca_512.joblib").load()
+                    reducer = PCAReducer(path="data/artifacts/pca_512.joblib").load()
                     logger.info("PCA reducer loaded for query-time dimensionality reduction.")
                 except Exception as e:
                     pytest.fail(f"PCA loading failed in tools.py workflow: {e}")
@@ -245,12 +245,12 @@ class TestPCALoader:
     @pytest.mark.asyncio
     async def test_integration_with_processing_pipeline(self, sample_sentence, temp_pca_path):
         """
-        Test PCALoader integration similar to how it's used in processing.py
+        Test PCAReducer integration similar to how it's used in processing.py
         """
         mock_embedding = np.random.rand(1536).tolist()
         
         with patch.dict(os.environ, {'OPENAI_API_KEY': 'test-key'}):
-            embedding_model = EmbeddingModel()
+            embedding_model = OpenAIEmbedder()
             
             with patch.object(embedding_model, '_embeddings', return_value=mock_embedding):
                 # Simulate the workflow from processing.py
@@ -273,7 +273,7 @@ class TestPCALoader:
                 all_embeddings = embeddings + additional_embeddings
                 
                 # 2. Train PCA on the embeddings (simulate train_pca_and_reduce_in_place)
-                pca_loader = PCALoader(path=temp_pca_path, target_dim=512, seed=42)
+                pca_loader = PCAReducer(path=temp_pca_path, target_dim=512, seed=42)
                 pca_loader.fit(all_embeddings)
                 pca_loader.save()
                 
@@ -288,7 +288,7 @@ class TestPCALoader:
                 np.testing.assert_allclose(norms, 1.0, rtol=1e-5)
                 
                 # 5. Test loading and using the saved model (simulate tools.py workflow)
-                query_loader = PCALoader(path=temp_pca_path).load()
+                query_loader = PCAReducer(path=temp_pca_path).load()
                 query_embedding = await embedding_model.create_embedding("What is Apple's revenue?")
                 reduced_query = query_loader.transform_one(query_embedding)
                 
