@@ -6,8 +6,11 @@ from .config_types import (
     VectorConfig,
     Generator,
     Calibration,
-    Judge,
-    YamlConfig
+    YamlConfig,
+    AgentTest,
+    HumanTest,
+    LLMTest,
+    ReportConfig
 )
 
 from .chunks import (

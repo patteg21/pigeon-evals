@@ -7,7 +7,7 @@ from evals.src.utils import logger
 from evals.src.utils.types import DocumentChunk, YamlConfig
 
 from evals.src.loader import DataLoader
-from evals.src.runner import ProcessorRunner, EmbedderRunner, StorageRunner
+from evals.src.runner import ProcessorRunner, EmbedderRunner, StorageRunner, ReportRunner
 from evals.src.parser import SECDataParser
 
 def load_yaml_config(config_path: str) -> List[YamlConfig]:
@@ -93,6 +93,12 @@ async def main():
                 for error in storage_results['errors'][:5]:  # Show first 5 errors
                     logger.warning(f"  - {error}")
 
+        # Run report based on config
+        report_config = config.report
+        if report_config:
+            report_runner = ReportRunner()
+            await report_runner.run_report(report_config, config)
+            logger.info("Report generation complete")
 
     except ValueError as e:
         logger.error(f"Error parsing YAML file: {e}")

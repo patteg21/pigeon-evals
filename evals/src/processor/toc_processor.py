@@ -112,7 +112,7 @@ Sample Output:
 
     def _parse_out_toc(self, toc_page: str) -> Dict[str, List[str]]:
         """Find the table of contents in the list of tables."""
-        from evals.src.utils.llm import OpenAILLM
+        from evals.src.utils.generator import OpenAILLM
 
         llm_client: OpenAILLM = OpenAILLM()
 

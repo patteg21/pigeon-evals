@@ -47,6 +47,7 @@ The pipeline follows a sequential processing flow:
 3. **Embedding Generation** - Creates vector representations using OpenAI embeddings
 4. **Dimensionality Reduction** - Supports PCA for reducing embedding dimensions (configurable output dimensions). Ideally would add in alternatives for the future such as [UMAP](https://umap-learn.readthedocs.io/en/latest/) as well as several other methods.
 5. **Storage** - Saves processed data to both text (SQLite) and vector (Pinecone) stores
+6. **Report Generation** - Can run Human Eval, LLM Eval, and MCP Agent Eval pipelines dynamically based on runs or seperate from runs entirely. Currently works for my local mcp too!
 
 ### Key Features
 - **Fully modular design** - Add/remove/swap any processing component
@@ -75,21 +76,38 @@ storage:
     index: "sec-embedding"
   outputs: ["chunks", "documents"] # local outputs of items
 
-# Below is not added but would be apart of the evaluation pipeline where we could provide use cases etc for the RAG to be tested and manually evaluated
-generator: {provider: "openai", model: "gpt-4o-mini"}
-judge:
-  type: "llm"
-  prompt: "You are a strict grader. Score 1-5 for relevance and faithfulness..."
-  calibration: {gold_fraction: 0.1}
-retrival: {type: "cosine", top_k: 10}
+# Below is how to run multiple test cases for a given run
+report:
+  tests:
+    - type: "agent"
+      name: "AWS Earnings Test"
+      prompt: "You are a helpful assistant Agent to discover more about the SEC Documnets in your tools"
+      query: "Get me information on the latest earnings of AWS from 2024"
+      mcp: 
+        command: "uv"
+        args:
+          - "--directory"
+          - "/Users/patteg/Desktop/development/gp-mcp-demo/"
+          - "run"
+          - "main.py"
 
+    - type: "llm"
+      name: "LLM Retrieval Judge"
+      prompt: "You are a strict grader. Score 1-5 for relevance and faithfulness..."
+      query: "Get me information on the latest revenue of AWS"
+      retrieval: 
+        top_k: 10
+
+    - type: "human"
+      name: "Sample Retrieval Results"
+      query: "TSLA Earnings"
+      retrieval: 
+        top_k: 10
 ```
 
 __TODO:__
 - Seperate the code in the MCP Server from what is in the processing pipeline. It currently borrows some things like the VectorDB Client and the SQL client. Ideally they would have their own ones due to the composible nature of the pipeline
 - More ways to chunk the document, particularly around some of the markers within the document such as smaller sectional differences, bullet pointed lists, and paragraph level. Also adding in more versatility with overlapping, max_chunk_size etc 
-- Add in run based report generations where all outputs for a given run can be put in seperate file stores.
-- Finishing the LLM as a Judge Piece as well as a series of RAG Test Cases that users can dynamically define / increase. This would also include giving users the outputs of the RAG for human evaluation as well.
 - Include more Pydantic models and elmiate mores usages of dictionaries where reasonable for more structured and readble code practices. 
 - Move the final parts of utils into more seperated pieces, primarily the typing which should be moved into the evals (since I am using shared typing I have not done so)
 - Expirement with other types of search other than dense-embedding based, using sparse embeddings like TF-IDF or a mixture of both
