@@ -10,10 +10,12 @@ embedding:
   max_workers: 8
 
 storage: 
-  text_store: "sqlite"
+  text_store: 
+    client: "sqlite"
+    upload: false
   vector:
-    upload: true
-    clear: true
+    upload: false
+    clear: false
     index: "sec-embeddings"
   outputs: ["chunks", "documents"]
 

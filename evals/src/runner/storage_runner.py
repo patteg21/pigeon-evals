@@ -84,10 +84,12 @@ class StorageRunner:
         # Store in SQLite if text_store is configured
         text_store = storage_config.text_store
         if text_store and text_store == "sqlite" and self.sql_client:
-            sql_results = await self._store_in_sqlite(chunks, storage_config)
-            results["stored_text"] = sql_results["stored"]
-            results["errors"].extend(sql_results["errors"])
-        
+
+            if storage_config.text_store.upload:
+                sql_results = await self._store_in_sql(chunks, storage_config)
+                results["stored_text"] = sql_results["stored"]
+                results["errors"].extend(sql_results["errors"])
+            
         # Generate outputs if configured
         outputs = storage_config.outputs
         if outputs:
@@ -122,15 +124,16 @@ class StorageRunner:
                 self.vector_db = None
         
         # Initialize text storage based on configuration
-        text_store_type = storage_config.text_store
+        text_store_type = storage_config.text_store.client
         if text_store_type:
             try:
                 text_class = self.storage_map["text"].get(text_store_type, SQLiteDB)
                 
                 if text_store_type == "sqlite":
-                    db_path = storage_config.sqlite_path or "data/.sql/chunks.db"
-                    self.sql_client = text_class(db_path=db_path)
-                    logger.info(f"Initialized {text_store_type} client with path: {db_path}")
+                    db_path = storage_config.text_store.path or "data/.sql/chunks.db"
+                    if storage_config.text_store.upload:
+                        self.sql_client = text_class(db_path=db_path)
+                        logger.info(f"Initialized {text_store_type} client with path: {db_path}")
                 else:
                     self.sql_client = text_class()
                     logger.info(f"Initialized {text_store_type} client")
@@ -172,8 +175,8 @@ class StorageRunner:
         
         return results
     
-    async def _store_in_sqlite(self, chunks: List[DocumentChunk], storage_config: Storage) -> Dict[str, Any]:
-        """Store chunks in SQLite database"""
+    async def _store_in_sql(self, chunks: List[DocumentChunk], storage_config: Storage) -> Dict[str, Any]:
+        """Store chunks in SQL database"""
         logger.info(f"Storing {len(chunks)} chunks in SQLite")
         
         results = {"stored": 0, "errors": []}

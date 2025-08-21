@@ -181,6 +181,7 @@ python -m pytest tests/test_table_visualization.py -v
 python -m pytest tests/test_chart_visualizations.py -v
 python -m pytest tests/test_pca_loader.py -v
 python -m pytest tests/test_agent_tool_usage.py -v
+python -m pytest tests/test_toc_processor.py -v
 ```
 
 - **`test_mcp.py`** - MCP server startup and tool registration
@@ -188,10 +189,7 @@ python -m pytest tests/test_agent_tool_usage.py -v
 - **`test_chart_visualizations.py`** - Chart visualization tools (line, bar, financial charts using Plotly)
 - **`test_pca_loader.py`** - PCA model loading and 512-dimension reduction
 - **`test_agent_tool_usage.py`** - Agent tool discovery and usage patterns
-- **`test_vector_search_relevancy.py`** - AI agent evaluates search result quality
-  - Tests 4 scenarios: Apple revenue, Microsoft Azure, Tesla production, general tech earnings
-  - Scores semantic match, accuracy, completeness, context relevance (0.0-1.0)
-  - Passes if ≥75% of cases score above threshold (0.6-0.7)
+- **`test_toc_processor.py`** - Table of Contents processing and chunk generation
 
 
 __TODO:__

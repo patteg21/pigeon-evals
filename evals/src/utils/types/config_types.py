@@ -27,9 +27,14 @@ class VectorConfig(BaseModel):
     index_name: Optional[str] = Field(None, description="Alternative index name field")
 
 
+class TextStoreConfig(BaseModel):
+    client: Optional[str] = Field(None, description="Path to SQLite database")
+    path: Optional[str] = Field(None, description="Path to SQLite database")
+    upload: bool = Field(default=False, description="Whether to upload / save text")
+
+
 class Storage(BaseModel):
-    text_store: Optional[str] = Field(None, description="Text storage backend")
-    sqlite_path: Optional[str] = Field(None, description="Path to SQLite database")
+    text_store: Optional[TextStoreConfig] = Field(None, description="Text storage backend")
     vector: Optional[VectorConfig] = Field(None, description="Vector storage configuration")
     vector_db: Optional[Dict[str, Any]] = Field(None, description="Vector database configuration")
     outputs: List[Literal["chunks", "documents"]] = Field(default_factory=list, description="Output types to store")
