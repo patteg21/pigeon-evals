@@ -1,9 +1,9 @@
-from typing import Optional
+from typing import Optional, List, Any
 from datetime import datetime
 
 from pydantic import BaseModel, model_validator
 
-from utils.typing.common import (
+from evals.src.utils.types.common import (
     FormType
 )
 
@@ -34,6 +34,8 @@ class SECDocument(BaseModel):
     form_type: FormType
     sec_data: Optional[dict] = None
     sec_metadata: Optional[SECMetadata] = None
+    toc: Optional['SECTable'] = None
+    parts: List[Any] = []
 
     @model_validator(mode="after")
     def set_year(self):

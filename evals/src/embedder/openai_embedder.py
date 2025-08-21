@@ -1,4 +1,4 @@
-from typing import Dict, Any, List, Iterable
+from typing import Dict, Any, List
 import os
 import asyncio
 import time
@@ -9,14 +9,17 @@ import diskcache as dc
 from dotenv import load_dotenv
 from openai import AsyncOpenAI, RateLimitError
 
-from utils.typing.chunks import DocumentChunk
-from utils.typing import Pooling
-from utils import logger
+from evals.src.utils.types.chunks import DocumentChunk
+from evals.src.utils.types import Pooling
+from evals.src.utils import logger
+
+from .dimensional_reduction import PCAReducer
+
 from .base import BaseEmbedder
 
 load_dotenv()
 
-cache = dc.Cache(".cache")
+cache = dc.Cache("data/.cache")
 
 
 class OpenAIEmbedder(BaseEmbedder):
@@ -27,7 +30,7 @@ class OpenAIEmbedder(BaseEmbedder):
         # add models as needed
     }
     
-    def __init__(self, config: Dict[str, Any] = None):
+    def __init__(self, config: Dict[str, Any] = None, pca_path: str | None = None):
         super().__init__(config)
         self.model = self.config.get("model", "text-embedding-3-small")
         self.pooling_strategy = self.config.get("pooling_strategy", "mean")
@@ -39,22 +42,42 @@ class OpenAIEmbedder(BaseEmbedder):
         self.client: AsyncOpenAI = AsyncOpenAI(api_key=os.getenv("OPENAI_API_KEY"))
         self.encoding = tiktoken.encoding_for_model(self.model)
         
+
+        self.pca_reducer:  PCAReducer | None = None
+        if pca_path:
+            logger.warning("PCA REDUCER HAS BEEN ACTIVATED")
+            try:
+                self.pca_reducer = PCAReducer({"path": pca_path}).load()
+            except Exception:
+                self.pca_reducer = None
+
         logger.info(f"Initializing OpenAI embedder with model: {self.model}, pooling_strategy: {self.pooling_strategy}")
     
+
     @property
     def provider_name(self) -> str:
         return "openai"
     
+
     async def _embeddings(self, text: str) -> List[float]:
-        """Create embedding for a single text with rate limit handling"""
-        async def _embed():
-            response = await self.client.embeddings.create(
-                input=text,
-                model=self.model
-            )
-            return response.data[0].embedding
-        
-        return await self._retry_with_backoff(_embed)
+            """Create embedding for a single text with rate limit handling"""
+            max_retries = 5
+            base_delay = 1.0
+            
+            for attempt in range(max_retries):
+                try:
+                    response = await self.client.embeddings.create(
+                        input=text,
+                        model=self.model
+                    )
+                    return response.data[0].embedding
+                except RateLimitError as e:
+                    if attempt == max_retries - 1:
+                        raise e
+                    
+                    # Exponential backoff with jitter
+                    delay = base_delay * (2 ** attempt) + (time.time() % 1)
+                    await asyncio.sleep(delay)
     
     async def create_embeddings_batch(self, texts: List[str]) -> List[List[float]]:
         """Create embeddings for multiple texts with rate limit handling"""
@@ -177,3 +200,46 @@ class OpenAIEmbedder(BaseEmbedder):
             embeddings[idx] = embedding
         
         return embeddings
+    
+
+    """
+===============================================
+Atypical Implementation for MCP Server
+===============================================
+    """
+
+    def _apply_pca_reduction(self, embedding: List[float]) -> List[float]:
+        """Apply PCA reduction if available"""
+        if self.pca_reducer and self.pca_reducer.model is not None:
+            return self.pca_reducer.transform_one(embedding)
+        # identity + L2 normalize to keep cosine geometry stable if no PCA
+        v = np.asarray(embedding, dtype=np.float32)
+        v = v / (np.linalg.norm(v) + 1e-9)
+        return v.tolist()
+
+    async def create_pinecone_embeddings(
+        self,
+        text: str,
+        strategy: Pooling = "mean",
+        *,
+        chunk_max_tokens: int = 2048,
+        overlap_tokens: int = 128,
+        batch_size: int = 64,
+        normalize_chunks: bool = True,
+        normalize_output: bool = True,
+        weighted_by_length: bool = True,
+    ) -> List[float]:
+        """
+        Create embedding and apply PCA reduction if configured.
+        """
+        embedding = await self.create_embedding(
+            text=text,
+            strategy=strategy,
+            chunk_max_tokens=chunk_max_tokens,
+            overlap_tokens=overlap_tokens,
+            batch_size=batch_size,
+            normalize_chunks=normalize_chunks,
+            normalize_output=normalize_output,
+            weighted_by_length=weighted_by_length,
+        )
+        return self._apply_pca_reduction(embedding)

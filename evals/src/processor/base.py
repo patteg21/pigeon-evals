@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from typing import Any, Dict, List
-from utils.typing import SECDocument
-from utils.typing.chunks import DocumentChunk
+from evals.src.utils.types import SECDocument
+from evals.src.utils.types.chunks import DocumentChunk
 
 
 class BaseProcessor(ABC):

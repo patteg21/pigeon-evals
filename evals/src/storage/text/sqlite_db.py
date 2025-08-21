@@ -4,20 +4,23 @@ from typing import Optional, List, Dict, Any
 from contextlib import contextmanager
 from pathlib import Path
 
+from .base import TextStorageBase, TextStorageError
 
-class SQLiteError(Exception):
-    """Base exception for SQLite operations"""
+
+class SQLiteError(TextStorageError):
+    """SQLite-specific exception for operations"""
     pass
 
 
-class SQLClient:
-    def __init__(self, db_path: str = ".sql/chunks.db"):
+class SQLiteDB(TextStorageBase):
+    def __init__(self, db_path: str = "data/.sql/chunks.db"):
         """Initialize SQLite client with database path"""
         self.db_path = db_path
         # Ensure directory exists
         Path(db_path).parent.mkdir(parents=True, exist_ok=True)
         self._initialize_db()
     
+
     def _initialize_db(self):
         """Initialize database with required tables"""
         with self._get_connection() as conn:
@@ -66,6 +69,7 @@ class SQLClient:
         except Exception as e:
             raise SQLiteError(f"Failed to store document {doc_id}: {str(e)}")
     
+
     def retrieve_document(self, doc_id: str) -> Optional[Dict[str, Any]]:
         """Retrieve document by ID"""
         try:
@@ -81,6 +85,7 @@ class SQLClient:
         except Exception as e:
             raise SQLiteError(f"Failed to retrieve document {doc_id}: {str(e)}")
     
+
     def retrieve_documents(self, doc_ids: List[str]) -> List[Dict[str, Any]]:
         """Retrieve multiple documents by IDs"""
         if not doc_ids:
@@ -111,6 +116,7 @@ class SQLClient:
         except Exception as e:
             raise SQLiteError(f"Failed to delete document {doc_id}: {str(e)}")
     
+
     def get_document_count(self) -> int:
         """Get total number of documents"""
         try:
@@ -122,6 +128,7 @@ class SQLClient:
         except Exception as e:
             raise SQLiteError(f"Failed to get document count: {str(e)}")
     
+
     def clear_all(self) -> bool:
         """Clear all documents from database"""
         try:

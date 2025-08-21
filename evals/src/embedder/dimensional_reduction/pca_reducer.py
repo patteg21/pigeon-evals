@@ -8,7 +8,7 @@ import sklearn
 
 from .base import BaseDimensionalReducer
 
-from utils import logger
+from evals.src.utils import logger
 
 class PCArtifactNotFoundError(FileNotFoundError):
     """Raised when the expected PCA artifact file is not found."""
@@ -33,7 +33,7 @@ class PCAReducer(BaseDimensionalReducer):
         super().__init__(config)
         self.target_dim = self.config.get("dims", 512)
         self.seed = self.config.get("seed", 42)
-        self.path = self.config.get("path", f"artifacts/pca_{self.target_dim}.joblib")
+        self.path = self.config.get("path", f"data/artifacts/pca_{self.target_dim}.joblib")
         self.model: PCA | None = None
     
     @property

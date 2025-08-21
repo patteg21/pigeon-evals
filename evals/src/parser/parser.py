@@ -1,7 +1,7 @@
 from typing import Dict, Optional
 import re
 
-from utils.typing.sec_files import SECDocument, SECMetadata
+from evals.src.utils.types.sec_files import SECDocument, SECMetadata
 
 class SECDataParser:
 

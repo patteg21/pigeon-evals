@@ -1,21 +1,17 @@
 import os
 import plotly.graph_objects as go
-import plotly.express as px
 from plotly.subplots import make_subplots
 import pandas as pd
-from datetime import datetime
-from pathlib import Path
-import uuid
-from typing import List, Union, Optional
 
-from mcp_server.types.visuals_type import (
+import uuid
+from typing import Optional
+
+from utils.types.visuals_type import (
     ChartData,
     BarChartData, 
     FinancialChartData,
-    DataPoint,
-    FinancialDataPoint
 )
-from utils import logger
+from evals.src.utils import logger
 
 def create_line_chart(data: ChartData, save_path: Optional[str] = "./.images") -> str:
     """

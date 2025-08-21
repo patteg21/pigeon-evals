@@ -1,26 +1,50 @@
 task: sample
-dataset_path: "data/"
+dataset_path: "data/docs"
+generator: { provider: "openai", model: "gpt-4o-mini" }
 processors: ["tables", "breaks"] # toc
 embedding: 
   provider: "openai"
   model: "text-embedding-3-small"
   pooling_strategy: "mean"  # mean, max, weighted, smooth_decay
-  dimension_reduction: {type: "PCA", dims: 512}   # UMAP / T-SNE
+  # dimension_reduction: {type: "PCA", dims: 512} 
   use_threading: true
   max_workers: 8
 
 storage: 
-  text_store: "sqlite"
+  text_store: 
+    client: "sqlite"
+    upload: false
   vector:
-    upload: true
-    clear: true
+    upload: false
+    clear: false
     index: "sec-embeddings"
   outputs: ["chunks", "documents"]
 
+report:
+  tests:
+    - type: "agent"
+      name: "AWS Earnings Test"
+      prompt: "You are a helpful assistant Agent to discover more about the SEC Documnets in your tools"
+      query: "Get me information on the latest earnings of AWS from 2024"
+      mcp: 
+        command: "uv"
+        args:
+          - "--directory"
+          - "/Users/patteg/Desktop/development/gp-mcp-demo/"
+          - "run"
+          - "main.py"
 
-generator: {provider: "openai", model: "gpt-4o-mini"}
-judge:
-  type: "llm"
-  prompt: "You are a strict grader. Score 1-5 for relevance and faithfulness..."
-  calibration: {gold_fraction: 0.1}
-retrival: {type: "cosine", top_k: 10}
+    - type: "llm"
+      name: "LLM Retrieval Judge"
+      prompt: "You are a strict grader. Score 1-5 for relevance and faithfulness..."
+      query: "Get me information on the latest revenue of AWS"
+      retrieval: 
+        top_k: 10
+
+    - type: "human"
+      name: "Sample Retrieval Results"
+      query: "TSLA Earnings"
+      retrieval: 
+        top_k: 10
+
+

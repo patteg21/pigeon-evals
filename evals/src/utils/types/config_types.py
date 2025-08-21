@@ -27,9 +27,14 @@ class VectorConfig(BaseModel):
     index_name: Optional[str] = Field(None, description="Alternative index name field")
 
 
+class TextStoreConfig(BaseModel):
+    client: Optional[str] = Field(None, description="Path to SQLite database")
+    path: Optional[str] = Field(None, description="Path to SQLite database")
+    upload: bool = Field(default=False, description="Whether to upload / save text")
+
+
 class Storage(BaseModel):
-    text_store: Optional[str] = Field(None, description="Text storage backend")
-    sqlite_path: Optional[str] = Field(None, description="Path to SQLite database")
+    text_store: Optional[TextStoreConfig] = Field(None, description="Text storage backend")
     vector: Optional[VectorConfig] = Field(None, description="Vector storage configuration")
     vector_db: Optional[Dict[str, Any]] = Field(None, description="Vector database configuration")
     outputs: List[Literal["chunks", "documents"]] = Field(default_factory=list, description="Output types to store")
@@ -44,16 +49,40 @@ class Calibration(BaseModel):
     gold_fraction: float = Field(..., description="Fraction of gold standard examples")
 
 
-class Judge(BaseModel):
-    type: str = Field(..., description="Judge type (llm, rule-based, etc.)")
-    prompt: str = Field(..., description="Judge prompt")
-    calibration: Optional[Calibration] = None
-
-
 class Retrieval(BaseModel):
-    type: str = Field(..., description="Retrieval type (cosine, etc.)")
-    top_k: int = Field(..., description="Number of top results to retrieve")
+    top_k: Optional[int] = Field(None, description="Number of top results to retrieve")
 
+
+class MCPConfig(BaseModel):
+    command: str
+    args: List[str]
+
+
+class AgentTest(BaseModel):
+    type: str = Field("agent", description="Type discriminator for this test")
+    name: str = Field(..., description="Name of this Test Case")
+    query: str = Field(..., description="Query for the Vector Database")
+    prompt: Optional[str] = Field(None, description="Prompt for LLM-based tests")
+    mcp: MCPConfig = Field(..., description="Command to Test the MCP server")
+
+
+class LLMTest(BaseModel):
+    type: str = Field("llm", description="Type discriminator for this test")
+    name: str = Field(..., description="Name of this Test Case")
+    query: str = Field(..., description="Query for the Vector Database")
+    prompt: Optional[str] = Field(None, description="Prompt for LLM-based tests")
+    retrieval: Optional[Retrieval] = Field(None, description="Retrieval type (cosine, etc.)")
+
+
+class HumanTest(BaseModel):
+    type: str = Field("human", description="Type discriminator for this test")
+    name: str = Field(..., description="Name of this Test Case")
+    query: str = Field(..., description="Query for the Vector Database")
+    retrieval: Optional[Retrieval] = Field(None, description="Retrieval type (cosine, etc.)")
+
+class ReportConfig(BaseModel):
+    tests: List[Union[LLMTest, AgentTest, HumanTest]] = Field()
+    output_path: Optional[str] = Field(None, description="Destination for outputs")
 
 class YamlConfig(BaseModel):
     run_id: str = Field(uuid4().hex, description="Task name")
@@ -64,9 +93,8 @@ class YamlConfig(BaseModel):
     embedding: Optional[Embedding] = Field(None, description="Embedding configuration")
     storage: Optional[Storage] = Field(None, description="Storage configuration")
     generator: Optional[Generator] = Field(None, description="Generator configuration")
-    judge: Optional[Judge] = Field(None, description="Judge configuration")
-    retrival: Optional[Retrieval] = Field(None, description="Retrieval configuration")
-    
+    report: Optional[ReportConfig] = Field(None, description="Test Cases to report configuration")
+
     @classmethod
     def from_yaml(cls, file_path: Union[str, Path]) -> 'YamlConfig':
         """Load configuration from YAML file"""

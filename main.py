@@ -4,8 +4,8 @@ import os
 from dotenv import load_dotenv
 from mcp.server.fastmcp import FastMCP
 
-from mcp_server import init_mcp_tools
-from utils import logger
+from tools import init_mcp_tools
+from evals.src.utils import logger
 
 # loads env for local development
 load_dotenv()

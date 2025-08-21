@@ -3,13 +3,12 @@ import asyncio
 from pathlib import Path
 from typing import List
 
-from utils import logger
-from utils.typing import DocumentChunk
-from evals.src.config_types import YamlConfig
+from evals.src.utils import logger
+from evals.src.utils.types import DocumentChunk, YamlConfig
 
-from loader.data_loader import DataLoader
-from runner import ProcessorRunner, EmbedderRunner, StorageRunner
-from parser.parser import SECDataParser
+from evals.src.loader import DataLoader
+from evals.src.runner import ProcessorRunner, EmbedderRunner, StorageRunner, ReportRunner
+from evals.src.parser import SECDataParser
 
 def load_yaml_config(config_path: str) -> List[YamlConfig]:
     """Load YAML configuration file and return list of configs."""
@@ -37,14 +36,13 @@ async def main():
         logger.info(f"Loaded {len(configs)} configuration(s) from {args.config}")
         
         for i, config in enumerate(configs):
-            logger.info(f"RUN ID: {config.run_id}")
-            logger.info(f"\n{'='*50}")
-            logger.info(f"Config {i + 1}")
             logger.info(f"{'='*50}")
+            logger.info(f"RUN ID: {config.run_id}")
             logger.info(f"  Task: {config.task}")
             logger.info(f"  Dataset Path: {config.dataset_path}")
             logger.info(f"  Processors: {config.processors}")
-            
+            logger.info(f"{'='*50}")
+
         # Load documents using DataLoader
         dataset_path = config.dataset_path
         logger.info(f"Loading documents from: {dataset_path}")
@@ -95,6 +93,12 @@ async def main():
                 for error in storage_results['errors'][:5]:  # Show first 5 errors
                     logger.warning(f"  - {error}")
 
+        # Run report based on config
+        report_config = config.report
+        if report_config:
+            report_runner = ReportRunner()
+            await report_runner.run_report(report_config, config)
+            logger.info("Report generation complete")
 
     except ValueError as e:
         logger.error(f"Error parsing YAML file: {e}")

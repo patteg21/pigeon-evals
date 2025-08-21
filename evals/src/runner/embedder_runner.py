@@ -1,8 +1,9 @@
 from typing import List, Tuple
 import asyncio
-from utils import logger
-from utils.typing.chunks import DocumentChunk
-from evals.src.config_types import Embedding
+
+from evals.src.utils import logger
+from evals.src.utils.types import DocumentChunk, Embedding
+
 from evals.src.embedder import OpenAIEmbedder, HuggingFaceEmbedder
 
 

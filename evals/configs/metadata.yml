@@ -1,5 +1,5 @@
 task: sample
-dataset_path: "data/"
+dataset_path: "data/docs"
 sec_metadata: [
   "commission_number",
 ]
