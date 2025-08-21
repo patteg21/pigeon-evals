@@ -35,7 +35,8 @@ class TestPCAReducer:
     @pytest.fixture
     def pca_loader(self, temp_pca_path):
         """Create PCAReducer instance with temporary path"""
-        return OpenAIEmbedder(path=temp_pca_path, target_dim=512, seed=42)
+        config = {"path": temp_pca_path, "dims": 512, "seed": 42}
+        return PCAReducer(config)
 
     @pytest.fixture
     async def embedding_model(self):
@@ -60,7 +61,8 @@ class TestPCAReducer:
         # Transform embeddings
         transformed = pca_loader.transform(sample_embeddings[:10])
         
-        assert transformed.shape == (10, 512)
+        assert len(transformed) == 10
+        assert len(transformed[0]) == 512
         # Check L2 normalization
         norms = np.linalg.norm(transformed, axis=1)
         np.testing.assert_allclose(norms, 1.0, rtol=1e-5)
@@ -89,7 +91,8 @@ class TestPCAReducer:
         assert os.path.exists(temp_pca_path)
         
         # Load in new instance
-        new_loader = PCAReducer(path=temp_pca_path)
+        config = {"path": temp_pca_path}
+        new_loader = PCAReducer(config)
         new_loader.load()
         
         assert new_loader.model is not None
@@ -124,7 +127,8 @@ class TestPCAReducer:
                 training_embeddings.append(sentence_embedding)
                 
                 # Initialize and train PCA
-                pca_loader = PCAReducer(path=temp_pca_path, target_dim=512, seed=42)
+                config = {"path": temp_pca_path, "dims": 512, "seed": 42}
+                pca_loader = PCAReducer(config)
                 pca_loader.fit(training_embeddings)
                 
                 # Transform the sentence embedding
@@ -184,7 +188,8 @@ class TestPCAReducer:
                 
                 # Load pre-trained PCA model from artifacts - MUST succeed or test fails
                 try:
-                    pca_loader = PCAReducer(path=artifacts_pca_path).load()
+                    config = {"path": artifacts_pca_path}
+                    pca_loader = PCAReducer(config).load()
                 except Exception as e:
                     pytest.fail(f"Failed to load pre-trained PCA model from {artifacts_pca_path}: {e}")
                 
@@ -219,7 +224,8 @@ class TestPCAReducer:
             with patch.object(embedding_model, '_embeddings', return_value=mock_embedding):
                 # Simulate the tools.py workflow - PCA MUST load successfully
                 try:
-                    reducer = PCAReducer(path="data/artifacts/pca_512.joblib").load()
+                    config = {"path": "data/artifacts/pca_512.joblib"}
+                    reducer = PCAReducer(config).load()
                     logger.info("PCA reducer loaded for query-time dimensionality reduction.")
                 except Exception as e:
                     pytest.fail(f"PCA loading failed in tools.py workflow: {e}")
@@ -273,7 +279,8 @@ class TestPCAReducer:
                 all_embeddings = embeddings + additional_embeddings
                 
                 # 2. Train PCA on the embeddings (simulate train_pca_and_reduce_in_place)
-                pca_loader = PCAReducer(path=temp_pca_path, target_dim=512, seed=42)
+                config = {"path": temp_pca_path, "dims": 512, "seed": 42}
+                pca_loader = PCAReducer(config)
                 pca_loader.fit(all_embeddings)
                 pca_loader.save()
                 
@@ -281,14 +288,16 @@ class TestPCAReducer:
                 transformed_embeddings = pca_loader.transform(embeddings)
                 
                 # 4. Verify results
-                assert transformed_embeddings.shape == (3, 512)
+                assert len(transformed_embeddings) == 3
+                assert len(transformed_embeddings[0]) == 512
                 
                 # Check L2 normalization for all vectors
                 norms = np.linalg.norm(transformed_embeddings, axis=1)
                 np.testing.assert_allclose(norms, 1.0, rtol=1e-5)
                 
                 # 5. Test loading and using the saved model (simulate tools.py workflow)
-                query_loader = PCAReducer(path=temp_pca_path).load()
+                config = {"path": temp_pca_path}
+                query_loader = PCAReducer(config).load()
                 query_embedding = await embedding_model.create_embedding("What is Apple's revenue?")
                 reduced_query = query_loader.transform_one(query_embedding)
                 

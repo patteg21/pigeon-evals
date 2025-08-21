@@ -126,7 +126,8 @@ class TestTOCProcessor:
         print(f"Saved full chunks to: {full_path}")
         
         # Basic assertions
-        assert any(c.type_chunk == "toc" for c in chunks), "No TOC chunk found"
+        assert any(c.type_chunk == "part" for c in chunks), "No part chunks found"
+        assert any(c.type_chunk == "item" for c in chunks), "No item chunks found"
         
         # Print some sample chunks for verification
         for chunk in chunks[:5]:
