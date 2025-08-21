@@ -1,5 +1,6 @@
 
 ## Environment
+For all my Developments I utilize uv when possible due to the better dependecy control.
 
 To install uv: [https://docs.astral.sh/uv/getting-started/installation/](https://docs.astral.sh/uv/getting-started/installation/)
 curl install: `curl -LsSf https://astral.sh/uv/install.sh | sh`
@@ -54,6 +55,7 @@ The pipeline follows a sequential processing flow:
 - **Pydantic validation** - Type-safe configuration with automatic error detection
 - **Multi-threaded embedding** - Parallel processing for faster execution
 - **Flexible storage** - Support for multiple text and vector storage backends
+- **Flexible Framework** - Removing any piece of this does not break the system, it simply skips that part, meaning this can be a full end to end eval pipeline
 
 ```bash
 task: sample
@@ -69,7 +71,9 @@ embedding:
 
 # Currently only supports the local sqlite and pinecone DB but ideally we can add more control on thinks like index
 storage: 
-  text_store: "sqlite"
+  text_store: 
+    client: "sqlite"
+    upload: false
   vector:
     upload: true    # if we can to upload the data
     clear: true     # if we want to clear the existing data in the index
@@ -106,12 +110,12 @@ report:
 ```
 
 __TODO:__
-- Seperate the code in the MCP Server from what is in the processing pipeline. It currently borrows some things like the VectorDB Client and the SQL client. Ideally they would have their own ones due to the composible nature of the pipeline
 - More ways to chunk the document, particularly around some of the markers within the document such as smaller sectional differences, bullet pointed lists, and paragraph level. Also adding in more versatility with overlapping, max_chunk_size etc 
 - Include more Pydantic models and elmiate mores usages of dictionaries where reasonable for more structured and readble code practices. 
 - Move the final parts of utils into more seperated pieces, primarily the typing which should be moved into the evals (since I am using shared typing I have not done so)
 - Expirement with other types of search other than dense-embedding based, using sparse embeddings like TF-IDF or a mixture of both
 - Finish the TOC Parser with the new updated code processing system (legacy code from first processing pipeline)
+- If I had more access to the VectorDB I would also test some of the different sizing of Dimensions for Vectors
 
 <br>
 <br>
@@ -211,9 +215,8 @@ python -m pytest tests/test_toc_processor.py -v
 
 
 __TODO:__
-- Add more tooling such as powerpoint generation to the tool-kit
+- Add more tooling such as powerpoint generation / memory system to the tool-kit
 - Overhaul the typing in the server itself to use even more Pydantic Models 
-- Create a seperate repo for the MCP Server and remove all inter depdenncies.
 - Increase test coverage to get a more granual level
 - Do a more complex RAG system when give a user query such as - query rewrite, query summarization, text extraction to better server the request of a user.
 - Add in additional query parameters for the Agent to further filter based on the document metadata.
