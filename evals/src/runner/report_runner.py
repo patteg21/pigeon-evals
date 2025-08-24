@@ -8,13 +8,14 @@ from dotenv import load_dotenv
 from agents.mcp import MCPServerStdio
 from agents import Agent, Runner, set_default_openai_key
 
-load_dotenv()
-
 from evals.src.embedder.openai_embedder import OpenAIEmbedder
 from evals.src.storage.vector import PineconeDB
 from evals.src.storage.text import SQLiteDB 
 
 from evals.src.utils.types import LLMTest, AgentTest, HumanTest, ReportConfig, YamlConfig
+
+load_dotenv()
+
 
 class ReportRunner:
 
@@ -27,6 +28,22 @@ class ReportRunner:
             config: YamlConfig
         ):
 
+        if report_config.retrieval:
+            self.top_k = report_config.retrieval.top_k
+            report_config.retrieval.rerank
+
+            if report_config.retrieval.rerank:
+                # TODO: Load a Reranker
+                self.reranker = None
+
+
+
+        self.evaluations = report_config.evaluations or True
+        self.metrics: List = report_config.metrics
+
+
+        default_tests: List = self._read_test_cases()
+
         self.vector_db_client: PineconeDB = PineconeDB()
         self.embedding_model: OpenAIEmbedder = OpenAIEmbedder(pca_path="data/artifacts/pca_512.joblib")
         self.sql_client: SQLiteDB = SQLiteDB()
@@ -34,7 +51,10 @@ class ReportRunner:
         self.run_id = config.run_id
         self.output_path = report_config.output_path if report_config.output_path else f"evals/reports/{self.run_id}/"
 
-        for test in report_config.tests:
+
+        tests =  report_config.tests + default_tests
+
+        for test in tests:
             if test.type == "agent":
                 await self._execute_agent_test(test)
             elif test.type == "human":
@@ -43,6 +63,13 @@ class ReportRunner:
                 await self._execute_llm_test(test)
     
     
+
+    async def _read_test_cases(self, path: str) -> List[AgentTest | HumanTest | LLMTest]:
+        # TODO match * to search for all formatted json in correct format log when incorrect format
+        
+        return []
+
+
     async def _execute_agent_test(self, agent_test: AgentTest):
         openai_api_key: str | None = os.getenv("OPENAI_API_KEY")
         if not openai_api_key:
@@ -75,7 +102,7 @@ class ReportRunner:
 
     async def _execute_human_test(self, human_test: HumanTest):
 
-        top_k = human_test.retrieval.top_k or 10
+        top_k = self.top_k or 10
 
         vec = await self.embedding_model.create_pinecone_embeddings(human_test.query)
 
@@ -104,7 +131,7 @@ class ReportRunner:
     async def _execute_llm_test(self, llm_test: LLMTest):
 
         
-        top_k = llm_test.retrieval.top_k or 10
+        top_k = self.top_k or 10
 
         vec = await self.embedding_model.create_pinecone_embeddings(llm_test.query)
 

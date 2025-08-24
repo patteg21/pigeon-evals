@@ -32,7 +32,7 @@ async def main():
     
     # Load configuration
     try:
-        configs = load_yaml_config(args.config)
+        configs: List[YamlConfig]  = load_yaml_config(args.config)
         logger.info(f"Loaded {len(configs)} configuration(s) from {args.config}")
         
         for i, config in enumerate(configs):

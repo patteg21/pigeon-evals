@@ -20,7 +20,16 @@ storage:
     index: "sec-embeddings"
   outputs: ["chunks", "documents"]
 
+
 report:
+  retrieval: 
+    top_k: 10
+    rerank:
+      provider: "huggingface"
+      model: "" # TODO: Find a model
+      
+  metrics: ["precision", "recall", "hit-rate", "mrr", "ncdg"]   
+  default_test: ""
   tests:
     - type: "agent"
       name: "AWS Earnings Test"
@@ -38,13 +47,10 @@ report:
       name: "LLM Retrieval Judge"
       prompt: "You are a strict grader. Score 1-5 for relevance and faithfulness..."
       query: "Get me information on the latest revenue of AWS"
-      retrieval: 
-        top_k: 10
+
 
     - type: "human"
       name: "Sample Retrieval Results"
       query: "TSLA Earnings"
-      retrieval: 
-        top_k: 10
 
 

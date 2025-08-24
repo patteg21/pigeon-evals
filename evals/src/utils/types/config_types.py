@@ -12,7 +12,7 @@ class DimensionReduction(BaseModel):
 
 
 class Embedding(BaseModel):
-    provider: str = Field(..., description="Embedding provider (openai, huggingface, etc.)")
+    provider: Literal["huggingface", "openai"] = Field(..., description="Embedding provider (openai, huggingface, etc.)")
     model: str = Field(..., description="Model name")
     pooling_strategy: str = Field(default="mean", description="Pooling strategy: mean, max, weighted, smooth_decay")
     dimension_reduction: Optional[DimensionReduction] = None
@@ -49,8 +49,14 @@ class Calibration(BaseModel):
     gold_fraction: float = Field(..., description="Fraction of gold standard examples")
 
 
+class Rerank(BaseModel):
+    provider: Literal["huggingface", "openai"] = Field("huggingface", description="The model provider for reranking")
+    model: Optional[str] = Field(..., description="Generator model name")
+
 class Retrieval(BaseModel):
     top_k: Optional[int] = Field(None, description="Number of top results to retrieve")
+    rerank: Optional[Rerank] = Field(None, description="A Reranker on top of the Retrieval")
+
 
 
 class MCPConfig(BaseModel):
@@ -58,6 +64,8 @@ class MCPConfig(BaseModel):
     args: List[str]
 
 
+
+# TODO: Add in a field that shows the optimal result for the retrieval
 class AgentTest(BaseModel):
     type: str = Field("agent", description="Type discriminator for this test")
     name: str = Field(..., description="Name of this Test Case")
@@ -65,24 +73,33 @@ class AgentTest(BaseModel):
     prompt: Optional[str] = Field(None, description="Prompt for LLM-based tests")
     mcp: MCPConfig = Field(..., description="Command to Test the MCP server")
 
-
 class LLMTest(BaseModel):
     type: str = Field("llm", description="Type discriminator for this test")
     name: str = Field(..., description="Name of this Test Case")
     query: str = Field(..., description="Query for the Vector Database")
     prompt: Optional[str] = Field(None, description="Prompt for LLM-based tests")
-    retrieval: Optional[Retrieval] = Field(None, description="Retrieval type (cosine, etc.)")
+    eval_type: List[Literal["pairwise", "single"]] = Field(["single"], description="If there is a LLM Eval, which methof") 
+    # pairwise => select which of the two is better or equally good or bad
 
 
 class HumanTest(BaseModel):
     type: str = Field("human", description="Type discriminator for this test")
     name: str = Field(..., description="Name of this Test Case")
     query: str = Field(..., description="Query for the Vector Database")
-    retrieval: Optional[Retrieval] = Field(None, description="Retrieval type (cosine, etc.)")
+
+
 
 class ReportConfig(BaseModel):
-    tests: List[Union[LLMTest, AgentTest, HumanTest]] = Field()
+    evaluations: bool = Field(True, description="If evaluations are being used for this...")
+    metrics: List[Literal["precision", "recall", "hit-rate", "mrr", "ndcg"]] = Field(['ndcg', "precision"], "recall", description="The metrics we care for evaluation.") 
+    # MRR => Mean Recipricol Rank
+    # NDCG => Normalized Discounted Cumaltive gain
+    default_test: Optional[str] = Field("data/tests/default.json", description="A path to a JSON will defined custom test cases for faster iteration.")
+    tests: List[Union[LLMTest, AgentTest, HumanTest]] = Field([], description="Specific Test cases we care about...")
     output_path: Optional[str] = Field(None, description="Destination for outputs")
+    retrieval: Optional[Retrieval] = Field(None, description="Retrieval type (cosine, etc.)")
+
+
 
 class YamlConfig(BaseModel):
     run_id: str = Field(uuid4().hex, description="Task name")
