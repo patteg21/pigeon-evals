@@ -8,11 +8,13 @@ from dotenv import load_dotenv
 from agents.mcp import MCPServerStdio
 from agents import Agent, Runner, set_default_openai_key
 
-from evals.src.embedder.openai_embedder import OpenAIEmbedder
-from evals.src.storage.vector import PineconeDB
-from evals.src.storage.text import SQLiteDB 
+from evals.src.embedder.openai_embedder import OpenAIEmbedder, BaseEmbedder
+from evals.src.storage.vector import PineconeDB, VectorStorageBase
+from evals.src.storage.text import SQLiteDB, TextStorageBase 
+from evals.src.storage.vector.reranker import HuggingFaceReranker
 
 from evals.src.utils.types import LLMTest, AgentTest, HumanTest, ReportConfig, YamlConfig
+
 
 load_dotenv()
 
@@ -20,21 +22,32 @@ load_dotenv()
 class ReportRunner:
 
     def __init__(self):
-        pass
+        
+        self.provider_map = {
+            "huggingface" : HuggingFaceReranker
+        }
 
     async def run_report(
             self, 
             report_config: ReportConfig, 
-            config: YamlConfig
+            config: YamlConfig,
+            *, 
+            vector_db_client: BaseEmbedder | None = None,
+            embedding_model: VectorStorageBase | None = None,
+            sql_client: TextStorageBase | None = None
         ):
 
+        self.vector_db_client = vector_db_client or PineconeDB()
+        self.embedding_model = embedding_model or OpenAIEmbedder(pca_path="data/artifacts/pca_512.joblib")
+        self.sql_client = sql_client or SQLiteDB()
+
+        # adds in a reranker for search when relevant (Not in MCP Test)
+        self.reranker = None
+        if report_config.retrieval and report_config.retrieval.rerank:
+            self.reranker = HuggingFaceReranker(report_config.retrieval.rerank)
+            
         if report_config.retrieval:
             self.top_k = report_config.retrieval.top_k
-            report_config.retrieval.rerank
-
-            if report_config.retrieval.rerank:
-                # TODO: Load a Reranker
-                self.reranker = None
 
 
 
@@ -44,12 +57,9 @@ class ReportRunner:
 
         default_tests: List = self._read_test_cases()
 
-        self.vector_db_client: PineconeDB = PineconeDB()
-        self.embedding_model: OpenAIEmbedder = OpenAIEmbedder(pca_path="data/artifacts/pca_512.joblib")
-        self.sql_client: SQLiteDB = SQLiteDB()
-
         self.run_id = config.run_id
         self.output_path = report_config.output_path if report_config.output_path else f"evals/reports/{self.run_id}/"
+        self.original_config = config
 
 
         tests =  report_config.tests + default_tests
@@ -61,10 +71,12 @@ class ReportRunner:
                 await self._execute_human_test(test)
             elif test.type == "llm":
                 await self._execute_llm_test(test)
+        
+        self._write_yaml()
     
     
 
-    async def _read_test_cases(self, path: str) -> List[AgentTest | HumanTest | LLMTest]:
+    def _read_test_cases(self, path: str = "data/tests/default.json") -> List[AgentTest | HumanTest | LLMTest]:
         # TODO match * to search for all formatted json in correct format log when incorrect format
         
         return []
@@ -113,7 +125,7 @@ class ReportRunner:
         for match in response.matches:
             metadata = getattr(match, 'metadata', {}) or {}
                     
-                    # Replace any existing text with full text from SQL database using document_id
+            # Replace any existing text with full text from SQL database using document_id
             document_id = metadata.get('document_id')
             if document_id:
 
@@ -121,6 +133,9 @@ class ReportRunner:
                 if doc and doc.get('text'):
                     metadata['text'] = doc['text']  # Replace with full text from SQL
             similiarity_search.append(metadata)
+
+        if self.reranker:
+            similiarity_search = self.reranker.rerank(documents=similiarity_search, query=human_test.query)
 
         self._write_outputs(
             human_test.model_dump(),
@@ -151,6 +166,10 @@ class ReportRunner:
                     metadata['text'] = doc['text']  # Replace with full text from SQL
             similiarity_search.append(metadata)
         
+        if self.reranker:
+            similiarity_search = self.reranker.rerank(documents=similiarity_search, query=llm_test.query)
+
+        
         agent = Agent(
             name="Assistant",
             instructions=f"{llm_test.prompt}",
@@ -178,11 +197,19 @@ class ReportRunner:
             "output": output,
             "name": name
         }
-        
+    
         filename = f"{name}.json"
         filepath = os.path.join(self.output_path, filename)
         
         with open(filepath, 'w', encoding='utf-8') as f:
             json.dump(output_data, f, indent=2, ensure_ascii=False)
+    
+    def _write_yaml(self):
+        os.makedirs(self.output_path, exist_ok=True)
         
+        config_filename = f"{self.original_config.task}_config.json"
+        config_filepath = os.path.join(self.output_path, config_filename)
+        
+        with open(config_filepath, 'w', encoding='utf-8') as f:
+            json.dump(self.original_config.model_dump(), f, indent=2, ensure_ascii=False)
         

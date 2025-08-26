@@ -2,7 +2,6 @@ from abc import ABC, abstractmethod
 from typing import List, Dict, Any, Optional
 from evals.src.utils.types.chunks import DocumentChunk
 
-
 class VectorStorageError(Exception):
     """Base exception for vector storage operations"""
     pass
@@ -22,7 +21,13 @@ class VectorStorageBase(ABC):
         pass
     
     @abstractmethod
-    def query(self, vector: List[float], top_k: int = 10, include_metadata: bool = True, filter: Optional[Dict[str, Any]] = None) -> Any:
+    def query(
+        self, 
+        vector: List[float], 
+        top_k: int = 10, 
+        include_metadata: bool = True, 
+        filter: Optional[Dict[str, Any]] | None = None, 
+    ) -> Any:
         """Query the vector database for similar vectors"""
         pass
     

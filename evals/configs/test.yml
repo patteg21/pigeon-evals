@@ -1,34 +1,38 @@
 task: sample
 dataset_path: "data/docs"
 generator: { provider: "openai", model: "gpt-4o-mini" }
-processors: ["tables", "breaks"] # toc
-embedding: 
-  provider: "openai"
-  model: "text-embedding-3-small"
-  pooling_strategy: "mean"  # mean, max, weighted, smooth_decay
-  # dimension_reduction: {type: "PCA", dims: 512} 
-  use_threading: true
-  max_workers: 8
+# processors: ["tables", "breaks"] # toc
+# embedding: 
+#   provider: "openai"
+#   model: "text-embedding-3-small"
+#   pooling_strategy: "mean"  # mean, max, weighted, smooth_decay
+#   # dimension_reduction: {type: "PCA", dims: 512} 
+#   use_threading: true
+#   max_workers: 8
 
-storage: 
-  text_store: 
-    client: "sqlite"
-    upload: false
-  vector:
-    upload: false
-    clear: false
-    index: "sec-embeddings"
-  outputs: ["chunks", "documents"]
+# storage:
+#   text_store: 
+#     client: "sqlite"
+#     upload: false
+
+#   vector:
+#     upload: false
+#     clear: false
+#     index: "sec-embeddings"
+    
+#   outputs: ["chunks", "documents"]
 
 
 report:
+
   retrieval: 
-    top_k: 10
+    top_k: 100
     rerank:
       provider: "huggingface"
-      model: "" # TODO: Find a model
+      model: "cross-encoder/ms-marco-MiniLM-L-6-v2" # TODO: Find a model
+      top_k: 10
       
-  metrics: ["precision", "recall", "hit-rate", "mrr", "ncdg"]   
+  metrics: ["precision", "recall", "hit-rate", "mrr", "ndcg"]  
   default_test: ""
   tests:
     - type: "agent"

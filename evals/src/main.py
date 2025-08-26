@@ -98,7 +98,7 @@ async def main():
         if report_config:
             report_runner = ReportRunner()
             await report_runner.run_report(report_config, config)
-            logger.info("Report generation complete")
+            logger.info(f"Report generation complete -- Run ID {config.run_id}")
 
     except ValueError as e:
         logger.error(f"Error parsing YAML file: {e}")

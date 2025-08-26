@@ -18,7 +18,7 @@ class VectorDBError(VectorStorageError):
 class MetadataFieldError(VectorDBError):
     """Error raised when required metadata fields are missing or invalid"""
     
-    def __init__(self, field_name: str, message: str = None):
+    def __init__(self, field_name: str, message: str | None = None):
         self.field_name = field_name
         if message is None:
             message = f"Missing or invalid metadata field: {field_name}"
@@ -36,7 +36,7 @@ class VectorNotFoundError(VectorDBError):
 class InvalidFilterError(VectorDBError):
     """Error raised when filter parameters are invalid"""
     
-    def __init__(self, filter_param: str, value, message: str = None):
+    def __init__(self, filter_param: str, value, message: str | None = None):
         self.filter_param = filter_param
         self.value = value
         if message is None:

@@ -33,6 +33,7 @@ class TextStoreConfig(BaseModel):
     upload: bool = Field(default=False, description="Whether to upload / save text")
 
 
+
 class Storage(BaseModel):
     text_store: Optional[TextStoreConfig] = Field(None, description="Text storage backend")
     vector: Optional[VectorConfig] = Field(None, description="Vector storage configuration")
@@ -40,23 +41,10 @@ class Storage(BaseModel):
     outputs: List[Literal["chunks", "documents"]] = Field(default_factory=list, description="Output types to store")
 
 
+# TODO: fill in this for where it exists in other models 
 class Generator(BaseModel):
     provider: str = Field(..., description="Generator provider")
     model: str = Field(..., description="Generator model name")
-
-
-class Calibration(BaseModel):
-    gold_fraction: float = Field(..., description="Fraction of gold standard examples")
-
-
-class Rerank(BaseModel):
-    provider: Literal["huggingface", "openai"] = Field("huggingface", description="The model provider for reranking")
-    model: Optional[str] = Field(..., description="Generator model name")
-
-class Retrieval(BaseModel):
-    top_k: Optional[int] = Field(None, description="Number of top results to retrieve")
-    rerank: Optional[Rerank] = Field(None, description="A Reranker on top of the Retrieval")
-
 
 
 class MCPConfig(BaseModel):
@@ -89,9 +77,23 @@ class HumanTest(BaseModel):
 
 
 
+class RerankConfig(BaseModel):
+    provider: Literal["huggingface", "openai"] = Field("huggingface", description="The model provider for reranking")
+    model: Optional[str] = Field(..., description="Generator model name")
+    top_k: Optional[int] = Field(..., description="The Top Results returned from the reranker")
+
+class Retrieval(BaseModel):
+    top_k: Optional[int] = Field(None, description="Number of top results to retrieve")
+    rerank: Optional[RerankConfig] = Field(None, description="A Reranker on top of the Retrieval")
+
+
+
 class ReportConfig(BaseModel):
     evaluations: bool = Field(True, description="If evaluations are being used for this...")
-    metrics: List[Literal["precision", "recall", "hit-rate", "mrr", "ndcg"]] = Field(['ndcg', "precision"], "recall", description="The metrics we care for evaluation.") 
+    metrics: List[Literal["precision", "recall", "hit-rate", "mrr", "ndcg"]] = Field(
+        default_factory=lambda: ["ndcg", "precision", "recall"],
+        description="The metrics we care for evaluation."
+    )    
     # MRR => Mean Recipricol Rank
     # NDCG => Normalized Discounted Cumaltive gain
     default_test: Optional[str] = Field("data/tests/default.json", description="A path to a JSON will defined custom test cases for faster iteration.")
