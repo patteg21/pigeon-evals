@@ -2,7 +2,6 @@ from typing import List
 from uuid import uuid4
 import json
 import os
-from pathlib import Path
 
 from dotenv import load_dotenv
 from agents.mcp import MCPServerStdio
@@ -168,11 +167,12 @@ class ReportRunner:
         
         if self.reranker:
             similiarity_search = self.reranker.rerank(documents=similiarity_search, query=llm_test.query)
-
+        
+        prompt = llm_test.prompt if llm_test.prompt else " " # TODO: Add in a default prompt 
         
         agent = Agent(
             name="Assistant",
-            instructions=f"{llm_test.prompt}",
+            instructions=prompt,
         )
         
         result = await Runner.run(starting_agent=agent, input=llm_test.query)
