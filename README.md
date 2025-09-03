@@ -188,35 +188,3 @@ Visuals
             chart_type (str)  # "candlestick", "ohlc", "line"
             show_volume (bool)  # default: True
 ```
-
-
-
-#### MCP Tests Case Descriptions
-
-```bash
-# Run all tests
-python -m pytest tests/ -v
-
-# Individual test files
-python -m pytest tests/test_mcp.py -v
-python -m pytest tests/test_table_visualization.py -v
-python -m pytest tests/test_chart_visualizations.py -v
-python -m pytest tests/test_pca_loader.py -v
-python -m pytest tests/test_agent_tool_usage.py -v
-python -m pytest tests/test_toc_processor.py -v
-```
-
-- **`test_mcp.py`** - MCP server startup and tool registration
-- **`test_table_visualization.py`** - Table image generation and file handling  
-- **`test_chart_visualizations.py`** - Chart visualization tools (line, bar, financial charts using Plotly)
-- **`test_pca_loader.py`** - PCA model loading and 512-dimension reduction
-- **`test_agent_tool_usage.py`** - Agent tool discovery and usage patterns
-- **`test_toc_processor.py`** - Table of Contents processing and chunk generation
-
-
-__TODO:__
-- Add more tooling such as powerpoint generation / memory system to the tool-kit
-- Overhaul the typing in the server itself to use even more Pydantic Models 
-- Increase test coverage to get a more granual level
-- Do a more complex RAG system when give a user query such as - query rewrite, query summarization, text extraction to better server the request of a user.
-- Add in additional query parameters for the Agent to further filter based on the document metadata.
