@@ -1,8 +1,8 @@
 from typing import List
 
-from evals.src.utils import logger
-from evals.src.utils.types import SECDocument, DocumentChunk, YamlConfig
-from evals.src.processor import TOCProcessor, TablesProcessor, BreaksProcessor
+from src.utils import logger
+from src.utils.types import SECDocument, DocumentChunk, YamlConfig
+from src.processor import TOCProcessor, TablesProcessor, BreaksProcessor
 
 
 class ProcessorRunner:

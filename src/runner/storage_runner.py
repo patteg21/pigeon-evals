@@ -1,12 +1,12 @@
 from typing import List, Dict, Any
 
 
-from evals.src.utils import logger
-from evals.src.utils.types import DocumentChunk, SECDocument, Storage
+from src.utils import logger
+from src.utils.types import DocumentChunk, SECDocument, Storage
 
-from evals.src.storage.vector import VectorStorageBase, PineconeDB
-from evals.src.storage.text import TextStorageBase, SQLiteDB
-from evals.src.storage.file_store import FileStorageBase, LocalFileStore 
+from src.storage.vector import VectorStorageBase, PineconeDB
+from src.storage.text import TextStorageBase, SQLiteDB
+from src.storage.file_store import FileStorageBase, LocalFileStore 
 
 
 class StorageRunner:

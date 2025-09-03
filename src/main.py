@@ -3,12 +3,12 @@ import asyncio
 from pathlib import Path
 from typing import List
 
-from evals.src.utils import logger
-from evals.src.utils.types import DocumentChunk, YamlConfig
+from src.utils import logger
+from src.utils.types import DocumentChunk, YamlConfig
 
-from evals.src.loader import DataLoader
-from evals.src.runner import ProcessorRunner, EmbedderRunner, StorageRunner, ReportRunner
-from evals.src.parser import SECDataParser
+from src.loader import DataLoader
+from src.runner import ProcessorRunner, EmbedderRunner, StorageRunner, ReportRunner
+from src.parser import SECDataParser
 
 def load_yaml_config(config_path: str) -> List[YamlConfig]:
     """Load YAML configuration file and return list of configs."""

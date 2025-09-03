@@ -1,10 +1,10 @@
 from typing import List, Tuple
 import asyncio
 
-from evals.src.utils import logger
-from evals.src.utils.types import DocumentChunk, Embedding
+from src.utils import logger
+from src.utils.types import DocumentChunk, Embedding
 
-from evals.src.embedder import OpenAIEmbedder, HuggingFaceEmbedder
+from src.embedder import OpenAIEmbedder, HuggingFaceEmbedder
 
 
 class EmbedderRunner:

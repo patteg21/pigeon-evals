@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from typing import List, Dict, Any, Optional
-from evals.src.utils.types.chunks import DocumentChunk
+from src.utils.types.chunks import DocumentChunk
 
 class VectorStorageError(Exception):
     """Base exception for vector storage operations"""

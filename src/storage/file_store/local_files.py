@@ -4,8 +4,8 @@ from typing import List
 from pathlib import Path
 
 from .base import FileStorageBase, FileStorageError
-from evals.src.utils.types import DocumentChunk, SECDocument
-from evals.src.utils import logger
+from src.utils.types import DocumentChunk, SECDocument
+from src.utils import logger
 
 
 class LocalFileStore(FileStorageBase):

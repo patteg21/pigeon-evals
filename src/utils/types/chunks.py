@@ -2,7 +2,7 @@ from typing import Optional, List
 
 from pydantic import BaseModel
 
-from evals.src.utils.types.sec_files import SECDocument
+from src.utils.types.sec_files import SECDocument
 
 class DocumentChunk(BaseModel):
     id: str

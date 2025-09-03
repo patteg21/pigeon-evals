@@ -9,9 +9,9 @@ import diskcache as dc
 from dotenv import load_dotenv
 from openai import AsyncOpenAI, RateLimitError
 
-from evals.src.utils.types.chunks import DocumentChunk
-from evals.src.utils.types import Pooling
-from evals.src.utils import logger
+from src.utils.types.chunks import DocumentChunk
+from src.utils.types import Pooling
+from src.utils import logger
 
 from .dimensional_reduction import PCAReducer
 

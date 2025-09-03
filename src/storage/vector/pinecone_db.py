@@ -6,7 +6,7 @@ from pinecone import (
     Pinecone
 )
 
-from evals.src.utils.types.chunks import DocumentChunk
+from src.utils.types.chunks import DocumentChunk
 from .base import VectorStorageBase, VectorStorageError
 
 

@@ -3,7 +3,7 @@ import json
 
 from openai import AsyncOpenAI
 
-from evals.src.utils import logger
+from src.utils import logger
 
 
 

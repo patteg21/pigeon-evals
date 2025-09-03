@@ -1,10 +1,10 @@
 from typing import Dict, Any, List
 import torch
 from sentence_transformers import CrossEncoder
-from evals.src.utils import logger
-from evals.src.storage.vector.reranker.base import RerankerBase
+from src.utils import logger
+from src.storage.vector.reranker.base import RerankerBase
 
-from evals.src.utils.types.configs import RerankConfig
+from src.utils.types.configs import RerankConfig
 
 class HuggingFaceReranker(RerankerBase):
     """Hugging Face cross-encoder reranker using sentence-transformers."""

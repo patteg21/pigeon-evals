@@ -2,10 +2,10 @@ from typing import List
 from pathlib import Path
 import os
 from uuid import uuid4
-from evals.src.utils.types import (
+from src.utils.types import (
     SECDocument
 )
-from evals.src.utils import logger
+from src.utils import logger
 
 
 class DataLoader:

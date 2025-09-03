@@ -19,3 +19,5 @@ logs.log
 .sql 
 
 evals/reports
+
+test_cases/

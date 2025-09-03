@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 
-from evals.src.utils.types import DocumentChunk, SECDocument
+from src.utils.types import DocumentChunk, SECDocument
 
 
 class FileStorageError(Exception):

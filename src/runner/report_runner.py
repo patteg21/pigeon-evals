@@ -7,12 +7,12 @@ from dotenv import load_dotenv
 from agents.mcp import MCPServerStdio
 from agents import Agent, Runner, set_default_openai_key
 
-from evals.src.embedder.openai_embedder import OpenAIEmbedder, BaseEmbedder
-from evals.src.storage.vector import PineconeDB, VectorStorageBase
-from evals.src.storage.text import SQLiteDB, TextStorageBase 
-from evals.src.storage.vector.reranker import HuggingFaceReranker
+from src.embedder.openai_embedder import OpenAIEmbedder, BaseEmbedder
+from src.storage.vector import PineconeDB, VectorStorageBase
+from src.storage.text import SQLiteDB, TextStorageBase 
+from src.storage.vector.reranker import HuggingFaceReranker
 
-from evals.src.utils.types import LLMTest, AgentTest, HumanTest, ReportConfig, YamlConfig
+from src.utils.types import LLMTest, AgentTest, HumanTest, ReportConfig, YamlConfig
 
 
 load_dotenv()
