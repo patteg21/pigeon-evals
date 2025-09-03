@@ -1,16 +1,16 @@
-from .config_types import (
+from .configs import (
     Storage,
     Retrieval,
     DimensionReduction,
     Embedding,
     VectorConfig,
     Generator,
-    Calibration,
     YamlConfig,
     AgentTest,
     HumanTest,
     LLMTest,
-    ReportConfig
+    ReportConfig,
+    RerankConfig
 )
 
 from .chunks import (

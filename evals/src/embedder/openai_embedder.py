@@ -30,7 +30,7 @@ class OpenAIEmbedder(BaseEmbedder):
         # add models as needed
     }
     
-    def __init__(self, config: Dict[str, Any] = None, pca_path: str | None = None):
+    def __init__(self, config: Dict[str, Any] | None = None, pca_path: str | None = None):
         super().__init__(config)
         self.model = self.config.get("model", "text-embedding-3-small")
         self.pooling_strategy = self.config.get("pooling_strategy", "mean")
