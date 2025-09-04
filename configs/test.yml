@@ -34,7 +34,7 @@ storage:
 eval:
   top_k: 10
   provider: "openai"
-  model: "gpt-3.5-turbo"
+  model: "gpt-4o"
   evaluations: true
   metrics:
     - "ndcg"
@@ -47,7 +47,10 @@ eval:
     top_k: 5
   
   test:
-    default_test: "data/tests/default.json"
+    load:
+      path: "data/tests/default.json"
+      key: "tests"
+      
     tests:
       - type: "llm"
         name: "basic_llm_test"
