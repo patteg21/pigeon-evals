@@ -5,6 +5,7 @@ from typing import List
 
 from utils import logger
 from utils.types import DocumentChunk, YamlConfig
+from models.embedder import Embedder
 
 from runner import EmbedderRunner, StorageRunner, ReportRunner
 
@@ -30,8 +31,40 @@ async def main():
     
     # Load configuration
     try:
-        configs: List[YamlConfig]  = load_yaml_config(args.config)
+        configs: List[YamlConfig] = load_yaml_config(args.config)
+        
+        # Process each configuration
+        for config in configs:
+            logger.info(f"Processing configuration: {config.task}")
 
+            if config.preprocess:
+                logger.info("Preprocessing Data... ")
+                pass
+
+            if config.parser:
+                logger.info("Parsing Data... ")
+
+                pass
+
+            if config.embedding:            
+                logger.info("Embedding Data...")
+
+            if config.storage:
+                
+                if config.storage.text_store:
+                    logger.info("Text Storing Data...")
+
+                    pass
+
+                if config.storage.vector:
+                    logger.info("Vector Storing Data...")
+                    pass
+            
+            if config.eval:
+                logger.info("Evaluating Data...")
+
+                pass
+            
     except ValueError as e:
         logger.error(f"Error parsing YAML file: {e}")
         return 1

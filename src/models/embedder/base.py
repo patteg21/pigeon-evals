@@ -4,7 +4,7 @@ import asyncio
 import time
 import numpy as np
 import diskcache as dc
-from utils.types.chunks import DocumentChunk
+from utils.types import DocumentChunk
 from utils.types import Pooling
 from utils import logger
 

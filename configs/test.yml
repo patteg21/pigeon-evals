@@ -1,0 +1,71 @@
+task: "example_eval_task"
+
+threading:
+  max_workers: 8
+
+preprocess:
+  ocr: "easyocr"
+parser:
+  todo: "something"
+
+embedding:
+  provider: "huggingface"
+  model: "sentence-transformers/all-MiniLM-L6-v2"
+  pooling_strategy: "mean"
+  dimension_reduction:
+    type: "PCA"
+    dims: 256
+  use_threading: true
+
+
+storage:
+  text_store:
+    client: "sqlite"
+    path: "./data/text_store.db"
+    upload: true
+  vector:
+    upload: true
+    clear: false
+    index: "eval_index"
+  outputs:
+    - "chunks"
+    - "documents"
+
+eval:
+  top_k: 10
+  provider: "openai"
+  model: "gpt-3.5-turbo"
+  evaluations: true
+  metrics:
+    - "ndcg"
+    - "precision"
+    - "recall"
+  
+  rerank:
+    provider: "huggingface"
+    model: "cross-encoder/ms-marco-MiniLM-L-6-v2"
+    top_k: 5
+  
+  test:
+    default_test: "data/tests/default.json"
+    tests:
+      - type: "llm"
+        name: "basic_llm_test"
+        query: "What is the main topic?"
+        prompt: "Analyze the retrieved documents and provide a summary."
+        eval_type:
+          - "single"
+      
+      - type: "human"
+        name: "human_review"
+        query: "Quality assessment query"
+      
+      - type: "agent"
+        name: "agent_test"
+        query: "Test agent functionality"
+        prompt: "Execute the agent task"
+        mcp:
+          command: "python"
+          args:
+            - "agent_script.py"
+            - "--test"

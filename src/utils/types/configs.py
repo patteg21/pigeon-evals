@@ -5,7 +5,35 @@ import yaml
 
 from pydantic import BaseModel, Field, field_validator
 
-# === Emebedding Models
+
+# === Checkpoint Config
+
+class CheckPoint(BaseModel):
+    pass
+
+
+# === Threading Config
+
+class ThreadingConfig(BaseModel):
+    max_workers: Optional[int] = Field(4, description="Worker threads implemented")
+
+
+# === Preprocess Config
+
+class PreprocessConfig(BaseModel):
+    ocr: Optional[Literal["easyocr", "tesseract"]] = Field(None, description="OCR for file types...") 
+    vllm: Optional[bool] = Field(None, description="VLLM for processing...")
+
+# === Parser Config
+
+class RegexParser(BaseModel):
+    pass
+
+
+class ParserConfig(BaseModel):
+    todo: Optional[str] = Field(None, description="Not implemented")
+
+# === Emebedding Config
 
 class DimensionReduction(BaseModel):
     type: str = Field(..., description="Type of dimension reduction (PCA, UMAP, T-SNE)")
@@ -18,15 +46,15 @@ class EmbeddingConfig(BaseModel):
     pooling_strategy: str = Field(default="mean", description="Pooling strategy: mean, max, weighted, smooth_decay")
     dimension_reduction: Optional[DimensionReduction] = None
     use_threading: bool = Field(default=True, description="Whether to use threading")
-    max_workers: int = Field(default=8, description="Maximum number of worker threads")
 
-# === Vector DB
+# === Vector DB Config
 
 class VectorConfig(BaseModel):
-    upload: bool = Field(default=False, description="Whether to upload vectors")
     clear: bool = Field(default=False, description="Whether to clear existing vectors")
     index: Optional[str] = Field(None, description="Index name for vector storage")
     index_name: Optional[str] = Field(None, description="Alternative index name field")
+    
+    upload: bool = Field(default=False, description="Whether to upload vectors")
 
 
 # === Text Store 
@@ -41,8 +69,6 @@ class TextStoreConfig(BaseModel):
 class StorageConfig(BaseModel):
     text_store: Optional[TextStoreConfig] = Field(None, description="Text storage backend")
     vector: Optional[VectorConfig] = Field(None, description="Vector storage configuration")
-    vector_db: Optional[Dict[str, Any]] = Field(None, description="Vector database configuration")
-    outputs: List[Literal["chunks", "documents"]] = Field(default_factory=list, description="Output types to store")
 
 
 # === Test Cases
@@ -107,21 +133,25 @@ class EvaluationConfig(BaseModel):
 
 # === General Config
 
+
 class YamlConfig(BaseModel):
     run_id: str = Field(uuid4().hex, description="Task name")
     task: str = Field(..., description="Task name")
     
+    # general
+    threading: Optional[ThreadingConfig] = Field(None, description="Threading number of workers")
+    dataset_path: Optional[str] = Field(None, description="Path to dataset")
+
     # document processing
-    preprocess: Optional[str] = Field(None, description="Preprocessing of Documents")
-    parser: Optional[str] = Field(None, description="Document Parser configuration")
+    preprocess: Optional[PreprocessConfig] = Field(None, description="Preprocessing of Documents")
+    parser: Optional[ParserConfig] = Field(None, description="Document Parser configuration")
     embedding: Optional[EmbeddingConfig] = Field(None, description="Embedding configuration")
     
     # document saving
     storage: Optional[StorageConfig] = Field(None, description="Storage configuration")
     
     # testing 
-
-    report: Optional[EvaluationConfig] = Field(None, description="Test Cases to report configuration")
+    eval: Optional[EvaluationConfig] = Field(None, description="Test Cases to report configuration")
 
     @classmethod
     def from_yaml(cls, file_path: Union[str, Path]) -> 'YamlConfig':
@@ -141,6 +171,10 @@ class YamlConfig(BaseModel):
     @classmethod
     def validate_dataset_path(cls, v):
         """Ensure dataset path exists or is valid"""
+        if v is None:
+            return v
         if not Path(v).exists() and not v.startswith(('http://', 'https://', 's3://')):
-            raise ValueError(f"Path error {v}")
+            from utils.logger import logger
+            logger.warning(f"Dataset path {v} does not exist, setting to None")
+            return None
         return v
