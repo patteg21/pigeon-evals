@@ -1,4 +1,28 @@
 
+# Pigeon Evals
+
+**A comprehensive RAG (Retrieval-Augmented Generation) evaluation pipeline for document processing and retrieval system benchmarking**
+
+[![Python](https://img.shields.io/badge/Python-3.8%2B-blue.svg)](https://python.org)
+[![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
+[![UV](https://img.shields.io/badge/Package%20Manager-uv-purple.svg)](https://docs.astral.sh/uv/)
+
+## Keywords
+`RAG evaluation`, `retrieval augmented generation`, `document processing pipeline`, `vector embeddings`, `embedding evaluation`, `semantic search`, `vector database`, `Pinecone`, `Qdrant`, `OpenAI embeddings`, `document chunking`, `retrieval benchmarking`, `MCP server`, `evaluation framework`, `Python pipeline`, `text processing`, `machine learning`, `NLP`, `retrieval system`, `AI evaluation`, `LLM evaluation`, `human evaluation`
+
+## What is Pigeon Evals?
+
+Pigeon Evals is a **modular RAG evaluation framework** designed for comprehensive **document processing**, **retrieval system benchmarking**, and **LLM evaluation**. It provides end-to-end functionality from document ingestion to performance evaluation, with support for multiple storage backends, embedding providers, and evaluation methodologies.
+
+### Perfect for:
+- 🔍 **RAG system evaluation** and performance benchmarking  
+- 📊 **Document processing pipeline** evaluation and optimization
+- 📈 **Semantic search** and retrieval quality assessment
+- 🤖 **AI agent evaluation** with MCP (Model Context Protocol) integration
+- 🏗️ **Research and production** RAG system development
+- 📚 **Vector database** experimentation and comparison
+- 📋 **Multi-modal evaluation** (Human, LLM, and Agent-based)
+
 ## Environment
 
 To install uv: [https://docs.astral.sh/uv/getting-started/installation/](https://docs.astral.sh/uv/getting-started/installation/)
@@ -24,10 +48,10 @@ uv add <library>
 ```
 
 
-# Document Processing Pipeline (`/evals/`)
+# RAG Evaluation Pipeline (`/evals/`)
 
 ## Overview
-A modular pipeline for processing SEC documents with embeddings, storage, and evaluation. The pipeline transforms raw documents into searchable vector representations using configurable processors and storage backends. The primary driver behind this setup is to create a proper evaluation pipeline that can also operate in a production setting.
+A modular pipeline for processing documents with embeddings, storage, and comprehensive evaluation. The pipeline transforms raw documents into searchable vector representations using configurable processors and storage backends. The primary driver behind this setup is to create a proper RAG evaluation pipeline that can also operate in a production setting.
 
 ## Usage
 ```bash
@@ -73,34 +97,34 @@ storage:
   vector:
     upload: true    # if we can to upload the data
     clear: true     # if we want to clear the existing data in the index
-    index: "sec-embedding"
+    index: "document-embedding"
   outputs: ["chunks", "documents"] # local outputs of items
 
 # Below is how to run multiple test cases for a given run
 report:
   tests:
     - type: "agent"
-      name: "AWS Earnings Test"
-      prompt: "You are a helpful assistant Agent to discover more about the SEC Documnets in your tools"
-      query: "Get me information on the latest earnings of AWS from 2024"
+      name: "Document Retrieval Agent Test"
+      prompt: "You are a helpful assistant agent to discover information from documents in your tools"
+      query: "Find relevant information about the specified topic from the document corpus"
       mcp: 
         command: "uv"
         args:
           - "--directory"
-          - "/Users/patteg/Desktop/development/gp-mcp-demo/"
+          - "/path/to/your/mcp/server/"
           - "run"
           - "main.py"
 
     - type: "llm"
       name: "LLM Retrieval Judge"
-      prompt: "You are a strict grader. Score 1-5 for relevance and faithfulness..."
-      query: "Get me information on the latest revenue of AWS"
+      prompt: "You are a strict grader. Score 1-5 for relevance and faithfulness of retrieved documents..."
+      query: "Find information about the specified topic"
       retrieval: 
         top_k: 10
 
     - type: "human"
-      name: "Sample Retrieval Results"
-      query: "TSLA Earnings"
+      name: "Human Evaluation of Retrieval"
+      query: "Sample query for human evaluation"
       retrieval: 
         top_k: 10
 ```
