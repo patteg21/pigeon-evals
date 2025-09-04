@@ -5,7 +5,7 @@ from typing import List
 
 from utils import logger
 from utils.types import DocumentChunk, YamlConfig
-from models.embedder import Embedder
+from models.embedding import Embedder
 
 from runner import EmbedderRunner, StorageRunner, ReportRunner
 
