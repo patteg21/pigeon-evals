@@ -10,6 +10,15 @@ class TextStorageError(Exception):
 class TextStorageBase(ABC):
     """Abstract base class for text storage implementations"""
     
+    def __init__(self, config: Dict[str, Any] = None):
+        self.config = config or {}
+    
+    @property
+    @abstractmethod
+    def provider_name(self) -> str:
+        """Return the provider name."""
+        pass
+    
     @abstractmethod
     def store_document(self, doc_id: str, doc_data: Dict[str, Any]) -> bool:
         """Store document data in the text storage system"""

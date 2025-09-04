@@ -13,12 +13,17 @@ class SQLiteError(TextStorageError):
 
 
 class SQLiteDB(TextStorageBase):
-    def __init__(self, db_path: str = "data/.sql/chunks.db"):
+    def __init__(self, config: Dict[str, Any] = None):
         """Initialize SQLite client with database path"""
-        self.db_path = db_path
+        super().__init__(config)
+        self.db_path = self.config.get("path", "data/.sql/chunks.db")
         # Ensure directory exists
-        Path(db_path).parent.mkdir(parents=True, exist_ok=True)
+        Path(self.db_path).parent.mkdir(parents=True, exist_ok=True)
         self._initialize_db()
+    
+    @property
+    def provider_name(self) -> str:
+        return "sqlite"
     
 
     def _initialize_db(self):

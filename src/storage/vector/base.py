@@ -10,6 +10,15 @@ class VectorStorageError(Exception):
 class VectorStorageBase(ABC):
     """Abstract base class for vector storage implementations"""
     
+    def __init__(self, config: Dict[str, Any] = None):
+        self.config = config or {}
+    
+    @property
+    @abstractmethod
+    def provider_name(self) -> str:
+        """Return the provider name."""
+        pass
+    
     @abstractmethod
     def upload(self, chunk: DocumentChunk) -> Any:
         """Upload a DocumentChunk with embeddings to the vector database"""
