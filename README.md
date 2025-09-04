@@ -78,55 +78,80 @@ The pipeline follows a sequential processing flow:
 - **Flexible Framework** - Removing any piece of this does not break the system, it simply skips that part, meaning this can be a full end to end eval pipeline
 
 ```bash
-task: sample
-dataset_path: "data/"
-processors: ["tables", "breaks"] # toc - short for Table of Contents Parses the TOC and seperates based on the different sections
-embedding: 
-  provider: "openai"
-  model: "text-embedding-3-small"
-  pooling_strategy: "mean"  # Other options:  max, weighted, smooth_decay
-  dimension_reduction: {type: "PCA", dims: 512}   # This can be forgone, it is optional, Ideally I would add in UMAP / T-SNE though those are not implemented
-  use_threading: true
+task: "example_eval_task"
+
+threading:
   max_workers: 8
 
-# Currently only supports the local sqlite and pinecone DB but ideally we can add more control on thinks like index
-storage: 
-  text_store: 
+preprocess:
+  ocr: "easyocr"
+parser:
+  todo: "something"
+
+embedding:
+  provider: "huggingface"
+  model: "sentence-transformers/all-MiniLM-L6-v2"
+  pooling_strategy: "mean"
+  dimension_reduction:
+    type: "PCA"
+    dims: 256
+  use_threading: true
+
+
+storage:
+  text_store:
     client: "sqlite"
-    upload: false
+    path: "./data/text_store.db"
+    upload: true
   vector:
-    upload: true    # if we can to upload the data
-    clear: true     # if we want to clear the existing data in the index
-    index: "document-embedding"
-  outputs: ["chunks", "documents"] # local outputs of items
+    upload: true
+    clear: false
+    index: "eval_index"
+  outputs:
+    - "chunks"
+    - "documents"
 
-# Below is how to run multiple test cases for a given run
-report:
-  tests:
-    - type: "agent"
-      name: "Document Retrieval Agent Test"
-      prompt: "You are a helpful assistant agent to discover information from documents in your tools"
-      query: "Find relevant information about the specified topic from the document corpus"
-      mcp: 
-        command: "uv"
-        args:
-          - "--directory"
-          - "/path/to/your/mcp/server/"
-          - "run"
-          - "main.py"
-
-    - type: "llm"
-      name: "LLM Retrieval Judge"
-      prompt: "You are a strict grader. Score 1-5 for relevance and faithfulness of retrieved documents..."
-      query: "Find information about the specified topic"
-      retrieval: 
-        top_k: 10
-
-    - type: "human"
-      name: "Human Evaluation of Retrieval"
-      query: "Sample query for human evaluation"
-      retrieval: 
-        top_k: 10
+eval:
+  top_k: 10
+  provider: "openai"
+  model: "gpt-4o"
+  evaluations: true
+  metrics:
+    - "ndcg"
+    - "precision"
+    - "recall"
+  
+  rerank:
+    provider: "huggingface"
+    model: "cross-encoder/ms-marco-MiniLM-L-6-v2"
+    top_k: 5
+  
+  test:
+    load:
+      path: "data/tests/default.json"
+      key: "tests"
+      
+    tests:
+      - type: "llm"
+        name: "basic_llm_test"
+        query: "What is the main topic?"
+        prompt: "Analyze the retrieved documents and provide a summary."
+        eval_type:
+          - "single"
+      
+      - type: "human"
+        name: "human_review"
+        query: "Quality assessment query"
+      
+      - type: "agent"
+        name: "agent_test"
+        query: "Test agent functionality"
+        prompt: "Execute the agent task"
+        mcp:
+          command: "python"
+          args:
+            - "agent_script.py"
+            - "--test"
 ```
 
 __TODO:__
