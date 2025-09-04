@@ -3,12 +3,12 @@ from datetime import datetime
 
 from pydantic import BaseModel, model_validator
 
-from src.utils.types.common import (
+from utils.types.common import (
     FormType
 )
 
-class SECMetadata(BaseModel):
-    """Comprehensive metadata extracted from SEC documents."""
+class Metadata(BaseModel):
+    """Comprehensive metadata extracted from  documents."""
     company_name: Optional[str] = None
     period_end: Optional[str] = None
     commission_number: Optional[str] = None
@@ -24,7 +24,7 @@ class SECMetadata(BaseModel):
     shares_outstanding_date: Optional[str] = None
     filer_status: Optional[str] = None
 
-class SECDocument(BaseModel):
+class Document(BaseModel):
     ticker: str
     company: Optional[str] = None
     year: Optional[str] = None
@@ -33,8 +33,8 @@ class SECDocument(BaseModel):
     path: str
     form_type: FormType
     sec_data: Optional[dict] = None
-    sec_metadata: Optional[SECMetadata] = None
-    toc: Optional['SECTable'] = None
+    sec_metadata: Optional[Metadata] = None
+    toc: Optional['Table'] = None
     parts: List[Any] = []
 
     @model_validator(mode="after")
@@ -47,7 +47,17 @@ class SECDocument(BaseModel):
         return self
 
 
-class SECTable(BaseModel):
+
+
+class DocumentChunk(BaseModel):
+    id: str
+    text: str
+    type_chunk: str
+    document: Document 
+    embeddding: Optional[List[float]] = None
+
+
+class Table(BaseModel):
     id: str
     page_number: Optional[int] = None
     text: str

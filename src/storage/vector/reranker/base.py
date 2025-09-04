@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from typing import List, Dict, Any, Optional
-from src.utils.types.chunks import DocumentChunk
+from utils.types.chunks import DocumentChunk
 
 class RerankerError(Exception):
     """Base exception for Reranker operations"""

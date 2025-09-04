@@ -5,13 +5,14 @@ import yaml
 
 from pydantic import BaseModel, Field, field_validator
 
+# === Emebedding Models
 
 class DimensionReduction(BaseModel):
     type: str = Field(..., description="Type of dimension reduction (PCA, UMAP, T-SNE)")
     dims: int = Field(..., description="Target dimensions")
 
 
-class Embedding(BaseModel):
+class EmbeddingConfig(BaseModel):
     provider: Literal["huggingface", "openai"] = Field(..., description="Embedding provider (openai, huggingface, etc.)")
     model: str = Field(..., description="Model name")
     pooling_strategy: str = Field(default="mean", description="Pooling strategy: mean, max, weighted, smooth_decay")
@@ -19,6 +20,7 @@ class Embedding(BaseModel):
     use_threading: bool = Field(default=True, description="Whether to use threading")
     max_workers: int = Field(default=8, description="Maximum number of worker threads")
 
+# === Vector DB
 
 class VectorConfig(BaseModel):
     upload: bool = Field(default=False, description="Whether to upload vectors")
@@ -27,6 +29,8 @@ class VectorConfig(BaseModel):
     index_name: Optional[str] = Field(None, description="Alternative index name field")
 
 
+# === Text Store 
+
 class TextStoreConfig(BaseModel):
     client: Optional[str] = Field(None, description="Path to SQLite database")
     path: Optional[str] = Field(None, description="Path to SQLite database")
@@ -34,17 +38,14 @@ class TextStoreConfig(BaseModel):
 
 
 
-class Storage(BaseModel):
+class StorageConfig(BaseModel):
     text_store: Optional[TextStoreConfig] = Field(None, description="Text storage backend")
     vector: Optional[VectorConfig] = Field(None, description="Vector storage configuration")
     vector_db: Optional[Dict[str, Any]] = Field(None, description="Vector database configuration")
     outputs: List[Literal["chunks", "documents"]] = Field(default_factory=list, description="Output types to store")
 
 
-# TODO: fill in this for where it exists in other models 
-class Generator(BaseModel):
-    provider: str = Field(..., description="Generator provider")
-    model: str = Field(..., description="Generator model name")
+# === Test Cases
 
 
 class MCPConfig(BaseModel):
@@ -52,8 +53,6 @@ class MCPConfig(BaseModel):
     args: List[str]
 
 
-
-# TODO: Add in a field that shows the optimal result for the retrieval
 class AgentTest(BaseModel):
     type: str = Field("agent", description="Type discriminator for this test")
     name: str = Field(..., description="Name of this Test Case")
@@ -69,26 +68,33 @@ class LLMTest(BaseModel):
     eval_type: List[Literal["pairwise", "single"]] = Field(["single"], description="If there is a LLM Eval, which methof") 
     # pairwise => select which of the two is better or equally good or bad
 
-
 class HumanTest(BaseModel):
     type: str = Field("human", description="Type discriminator for this test")
     name: str = Field(..., description="Name of this Test Case")
     query: str = Field(..., description="Query for the Vector Database")
 
 
+# === Evaluation Config
 
 class RerankConfig(BaseModel):
     provider: Literal["huggingface", "openai"] = Field("huggingface", description="The model provider for reranking")
-    model: Optional[str] = Field(..., description="Generator model name")
+    model: Optional[str] = Field(..., description="Rerank model name")
     top_k: Optional[int] = Field(..., description="The Top Results returned from the reranker")
 
-class Retrieval(BaseModel):
+
+class TestConfig(BaseModel):
+    default_test: Optional[str] = Field("data/tests/default.json", description="A path to a JSON will defined custom test cases for faster iteration.")
+    tests:  List[Union[LLMTest, AgentTest, HumanTest]] = Field([], description="Specific Test cases we care about...")
+
+
+
+class EvaluationConfig(BaseModel):
     top_k: Optional[int] = Field(None, description="Number of top results to retrieve")
     rerank: Optional[RerankConfig] = Field(None, description="A Reranker on top of the Retrieval")
 
+    provider: str = Field(..., description="Generator provider")
+    model: str = Field(..., description="Generator model name")
 
-
-class ReportConfig(BaseModel):
     evaluations: bool = Field(True, description="If evaluations are being used for this...")
     metrics: List[Literal["precision", "recall", "hit-rate", "mrr", "ndcg"]] = Field(
         default_factory=lambda: ["ndcg", "precision", "recall"],
@@ -96,23 +102,26 @@ class ReportConfig(BaseModel):
     )    
     # MRR => Mean Recipricol Rank
     # NDCG => Normalized Discounted Cumaltive gain
-    default_test: Optional[str] = Field("data/tests/default.json", description="A path to a JSON will defined custom test cases for faster iteration.")
-    tests: List[Union[LLMTest, AgentTest, HumanTest]] = Field([], description="Specific Test cases we care about...")
-    output_path: Optional[str] = Field(None, description="Destination for outputs")
-    retrieval: Optional[Retrieval] = Field(None, description="Retrieval type (cosine, etc.)")
+    test: Optional[TestConfig] = Field(None, description="Specific Test cases we care about...")
 
 
+# === General Config
 
 class YamlConfig(BaseModel):
     run_id: str = Field(uuid4().hex, description="Task name")
     task: str = Field(..., description="Task name")
-    dataset_path: str = Field(..., description="Path to dataset")
-    sec_metadata: List[str] = Field(default_factory=list, description="SEC metadata fields to extract")
-    processors: List[str] = Field(default_factory=list, description="List of processors to use")
-    embedding: Optional[Embedding] = Field(None, description="Embedding configuration")
-    storage: Optional[Storage] = Field(None, description="Storage configuration")
-    generator: Optional[Generator] = Field(None, description="Generator configuration")
-    report: Optional[ReportConfig] = Field(None, description="Test Cases to report configuration")
+    
+    # document processing
+    preprocess: Optional[str] = Field(None, description="Preprocessing of Documents")
+    parser: Optional[str] = Field(None, description="Document Parser configuration")
+    embedding: Optional[EmbeddingConfig] = Field(None, description="Embedding configuration")
+    
+    # document saving
+    storage: Optional[StorageConfig] = Field(None, description="Storage configuration")
+    
+    # testing 
+
+    report: Optional[EvaluationConfig] = Field(None, description="Test Cases to report configuration")
 
     @classmethod
     def from_yaml(cls, file_path: Union[str, Path]) -> 'YamlConfig':

@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from typing import Any, Dict, List
-from src.utils.types import SECDocument
-from src.utils.types.chunks import DocumentChunk
+from utils.types import Document
+from utils.types.chunks import DocumentChunk
 
 
 class BaseProcessor(ABC):
@@ -11,11 +11,11 @@ class BaseProcessor(ABC):
         self.config = config or {}
     
     @abstractmethod
-    def process(self, document: SECDocument) -> List[DocumentChunk]:
+    def process(self, document: Document) -> List[DocumentChunk]:
         """Process a single document and return chunks."""
         raise NotImplementedError
     
-    def process_batch(self, documents: List[SECDocument]) -> List[DocumentChunk]:
+    def process_batch(self, documents: List[Document]) -> List[DocumentChunk]:
         """Process a batch of documents and return all chunks."""
         all_chunks = []
         for document in documents:

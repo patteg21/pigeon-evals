@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 
-from src.utils.types import DocumentChunk, SECDocument
+from utils.types import DocumentChunk, Document
 
 
 class FileStorageError(Exception):
@@ -17,7 +17,7 @@ class FileStorageBase(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def export_documents(self, data: SECDocument = None) -> bool:
+    def export_documents(self, data: Document = None) -> bool:
         """Save files based on configuration"""
         
         raise NotImplementedError

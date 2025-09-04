@@ -4,8 +4,8 @@ from typing import List
 from pathlib import Path
 
 from .base import FileStorageBase, FileStorageError
-from src.utils.types import DocumentChunk, SECDocument
-from src.utils import logger
+from utils.types import DocumentChunk, Document
+from utils import logger
 
 
 class LocalFileStore(FileStorageBase):
@@ -42,7 +42,7 @@ class LocalFileStore(FileStorageBase):
         except Exception as e:
             raise FileStorageError(f"Failed to export chunks: {str(e)}")
 
-    def export_documents(self, documents: List[SECDocument]) -> bool:
+    def export_documents(self, documents: List[Document]) -> bool:
         """Export documents as JSON objects"""
         try:
             documents_data = []

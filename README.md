@@ -1,6 +1,5 @@
 
 ## Environment
-For all my Developments I utilize uv when possible due to the better dependecy control.
 
 To install uv: [https://docs.astral.sh/uv/getting-started/installation/](https://docs.astral.sh/uv/getting-started/installation/)
 curl install: `curl -LsSf https://astral.sh/uv/install.sh | sh`
