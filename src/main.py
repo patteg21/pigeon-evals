@@ -4,10 +4,9 @@ from pathlib import Path
 from typing import List
 
 from utils import logger
-from utils.types import DocumentChunk, YamlConfig
-from models.embedding import Embedder
+from models import YamlConfig
 
-from runner import EmbedderRunner, StorageRunner, ReportRunner
+from runner import EmebeddingRunner, StorageRunner, ReportRunner, ParserRunner
 
 def load_yaml_config(config_path: str) -> List[YamlConfig]:
     """Load YAML configuration file and return list of configs."""
@@ -18,8 +17,8 @@ def load_yaml_config(config_path: str) -> List[YamlConfig]:
 
 async def main():
     parser = argparse.ArgumentParser(description='Run evaluation with YAML configuration')
-    parser.add_argument('--config', '-c', type=str, required=True,
-                       help='Path to YAML configuration file')
+    parser.add_argument('--config', '-c', type=str, required=False, default="configs/test.yml",
+                       help='Path to YAML configuration file (default: configs/test.yml)')
     
     args = parser.parse_args()
     
@@ -47,7 +46,8 @@ async def main():
                 pass
 
             if config.embedding:            
-                logger.info("Embedding Data...")
+                config.embedding
+
 
             if config.storage:
                 

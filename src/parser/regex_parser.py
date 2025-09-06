@@ -1,23 +1,23 @@
 from abc import ABC, abstractmethod
-from typing import Any, Dict, List
-from utils.types import Document
-from utils.types.chunks import DocumentChunk
+from typing import Any, Dict
 
+from models.configs import ParserConfig
 
-class BaseProcessor(ABC):
+class RegExParser(ABC):
     """Base class for all document processors."""
     
-    def __init__(self, config: Dict[str, Any] = None):
-        self.config = config or {}
+    def __init__(self, config: ParserConfig | None):
+        self.config = config
     
     @abstractmethod
-    def process(self, document: Document) -> List[DocumentChunk]:
+    def process(self):
         """Process a single document and return chunks."""
+        raise NotImplementedError
+    
+    def process_batch(self):
+        """Process a batch of documents and return all chunks."""
         pass
     
-    def process_batch(self, documents: List[Document]) -> List[DocumentChunk]:
-        pass
-
     @property
     @abstractmethod
     def name(self) -> str:
@@ -25,4 +25,8 @@ class BaseProcessor(ABC):
         pass
 
     def _compute_page_number(self, body: str, pos: int) -> int:
-        pass
+        """Pages start at 1; count [PAGE_BREAK] before `pos`."""
+        if pos < 0:
+            pos = 0
+        return body[:pos].count("[PAGE_BREAK]") + 1
+    

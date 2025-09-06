@@ -6,7 +6,9 @@ threading:
 preprocess:
   ocr: "easyocr"
 parser:
-  todo: "something"
+  type: "regex"
+  patterns:
+    - ".*"
 
 embedding:
   provider: "huggingface"

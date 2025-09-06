@@ -1,27 +1,23 @@
 from abc import ABC, abstractmethod
-from typing import Any, Dict, List
-from utils.types import Document
-from utils.types.chunks import DocumentChunk
+from typing import Any, Dict
+
+from models.configs import ParserConfig
 
 
-class BaseProcessor(ABC):
+class BaseParser(ABC):
     """Base class for all document processors."""
     
-    def __init__(self, config: Dict[str, Any] = None):
-        self.config = config or {}
+    def __init__(self, config: ParserConfig | None):
+        self.config = config
     
     @abstractmethod
-    def process(self, document: Document) -> List[DocumentChunk]:
+    def process(self):
         """Process a single document and return chunks."""
         raise NotImplementedError
     
-    def process_batch(self, documents: List[Document]) -> List[DocumentChunk]:
+    def process_batch(self):
         """Process a batch of documents and return all chunks."""
-        all_chunks = []
-        for document in documents:
-            chunks = self.process(document)
-            all_chunks.extend(chunks)
-        return all_chunks
+        pass
     
     @property
     @abstractmethod

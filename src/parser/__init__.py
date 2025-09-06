@@ -1,6 +1,8 @@
-from .base import BaseProcessor
+from .base import BaseParser
+from .regex_parser import RegExParser
 
 
 __all__ = [
-    "BaseProcessor",
+    "BaseParser",
+    "RegExParser"
 ]
