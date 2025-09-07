@@ -1,6 +1,6 @@
-from .base import BaseProcessor
+from .base import BaseParser
 
 
 __all__ = [
-    "BaseProcessor",
+    "BaseParser",
 ]

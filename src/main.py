@@ -3,11 +3,9 @@ import asyncio
 from pathlib import Path
 from typing import List
 
-from utils import logger
-from utils.types import DocumentChunk, YamlConfig
-from models.embedder import Embedder
-
-from runner import EmbedderRunner, StorageRunner, ReportRunner
+from utils import logger, DataLoader
+from models import YamlConfig, Document, DocumentChunk
+from runner import EmebeddingRunner, StorageRunner, ReportRunner, ParserRunner
 
 def load_yaml_config(config_path: str) -> List[YamlConfig]:
     """Load YAML configuration file and return list of configs."""
@@ -18,8 +16,8 @@ def load_yaml_config(config_path: str) -> List[YamlConfig]:
 
 async def main():
     parser = argparse.ArgumentParser(description='Run evaluation with YAML configuration')
-    parser.add_argument('--config', '-c', type=str, required=True,
-                       help='Path to YAML configuration file')
+    parser.add_argument('--config', '-c', type=str, required=False, default="configs/test.yml",
+                       help='Path to YAML configuration file (default: configs/test.yml)')
     
     args = parser.parse_args()
     
@@ -35,19 +33,22 @@ async def main():
         
         # Process each configuration
         for config in configs:
+
+            loader = DataLoader(config.dataset)
+            documents: List[Document] = loader.load()
+
             logger.info(f"Processing configuration: {config.task}")
 
-            if config.preprocess:
-                logger.info("Preprocessing Data... ")
-                pass
 
             if config.parser:
                 logger.info("Parsing Data... ")
-
-                pass
+                parser_runner = ParserRunner(config.parser)
+                document_chunks: List[DocumentChunk] = await parser_runner.run(documents)
+                print(len(document_chunks))
 
             if config.embedding:            
-                logger.info("Embedding Data...")
+                config.embedding
+
 
             if config.storage:
                 

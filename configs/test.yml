@@ -1,12 +1,31 @@
 task: "example_eval_task"
+dataset: 
+  path: "data/processed_filings"
 
 threading:
   max_workers: 8
 
 preprocess:
   ocr: "easyocr"
+
 parser:
-  todo: "something"
+  type: "multistage"
+  processes:
+    - name: "table_extraction"
+      steps:
+        - strategy: "regex"
+          regex_pattern: "\\[TABLE_START\\][\\s\\S]*?\\[TABLE_END\\]"
+          ignore_case: true
+
+    - name: "paragraph_extraction"
+      steps:
+        - strategy: "regex"
+          regex_pattern: "\\[PAGE BREAK\\]"
+          ignore_case: true
+        - strategy: "paragraph"
+          chunk_size: null
+          chunk_overlap: 256 
+
 
 embedding:
   provider: "huggingface"
