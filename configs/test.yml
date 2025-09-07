@@ -1,4 +1,6 @@
 task: "example_eval_task"
+dataset: 
+  path: "data/processed_filings"
 
 threading:
   max_workers: 8
@@ -10,16 +12,21 @@ parser:
   type: "multistage"
   processes:
     - name: "table_extraction"
-      keep_separator: true
-      chunk_overlap: 0
       steps:
         - strategy: "regex"
           regex_pattern: "\\[TABLE_START\\][\\s\\S]*?\\[TABLE_END\\]"
-        - 
-    
-    -name: "paragraph_extraction"
+          ignore_case: true
 
-    
+    - name: "paragraph_extraction"
+      steps:
+        - strategy: "regex"
+          regex_pattern: "\\[PAGE BREAK\\]"
+          ignore_case: true
+        - strategy: "paragraph"
+          chunk_size: null
+          chunk_overlap: 256 
+
+
 embedding:
   provider: "huggingface"
   model: "sentence-transformers/all-MiniLM-L6-v2"

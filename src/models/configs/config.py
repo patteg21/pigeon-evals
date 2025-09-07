@@ -22,19 +22,20 @@ class ThreadingConfig(BaseModel):
     max_workers: Optional[int] = Field(4, description="Worker threads implemented")
 
 
-# === Preprocess Config
+
+# === Dataset Config
 
 class PreprocessConfig(BaseModel):
     ocr: Optional[Literal["easyocr", "tesseract"]] = Field(None, description="OCR for file types...") 
     vllm: Optional[bool] = Field(None, description="VLLM for processing...")
 
 
-# === Dataset Config
 class DatasetConfig(BaseModel):
     provider: Optional[Literal['local', 's3']] = Field("local", description="File Path for the files...")
-    path: str = Field(None, description="Path to dataset")
+    path: str = Field(..., description="Path to dataset")
 
     allowed_types: Optional[List[str]] = ["txt"] # todo handle multiple files
+
 
 
 # === General Config
@@ -43,11 +44,11 @@ class DatasetConfig(BaseModel):
 class YamlConfig(BaseModel):
     run_id: str = Field(uuid4().hex, description="Task name")
     task: str = Field(..., description="Task name")
+
     
     # general
     dataset: Optional[DatasetConfig] = Field(None, description="Dataset and Configs")
     threading: Optional[ThreadingConfig] = Field(None, description="Threading number of workers")
-    preprocess: Optional[PreprocessConfig] = Field(None, description="Preprocessing of Documents")
 
 
     # document processing
@@ -74,14 +75,3 @@ class YamlConfig(BaseModel):
         with open(file_path, 'w') as f:
             yaml.dump(self.model_dump(), f, default_flow_style=False)
     
-    @field_validator('dataset_path')
-    @classmethod
-    def validate_dataset_path(cls, v):
-        """Ensure dataset path exists or is valid"""
-        if v is None:
-            return v
-        if not Path(v).exists() and not v.startswith(('http://', 'https://', 's3://')):
-            from utils.logger import logger
-            logger.warning(f"Dataset path {v} does not exist, setting to None")
-            return None
-        return v

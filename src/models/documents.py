@@ -1,4 +1,5 @@
 from typing import Optional, List
+from uuid import uuid4
 
 from pydantic import BaseModel
 
@@ -8,14 +9,15 @@ class Metadata(BaseModel):
     pass
 
 class Document(BaseModel):
-    id: str
+    id: str = uuid4().hex
     name: str
+    path: str
     text: str
 
 
 
 class DocumentChunk(BaseModel):
-    id: str
+    id: str = uuid4().hex
     text: str
     document: Document 
     embeddding: Optional[List[float]] = None

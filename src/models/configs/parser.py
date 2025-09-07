@@ -6,15 +6,18 @@ class StepConfig(BaseModel):
     """Configuration for a single step in a process chain."""
     strategy: Literal["character", "word", "sentence", "paragraph", "regex", "separator"] = Field("character", description="Splitting strategy")
     chunk_size: Optional[int] = Field(None, description="Maximum chunk size (None for no limit)")
+    chunk_overlap: int = Field(0, description="Overlap between chunks")
     separator: Optional[str] = Field("\n\n", description="Separator for splitting")
     regex_pattern: Optional[str] = Field(None, description="Regex pattern for regex splitting")
+    keep_separator: bool = Field(False, description="Whether to keep separators in chunks")
+    ignore_case: bool = Field(False, description="Case-insensitive matching for regex")
+    keep_empty: bool = Field(False, description="Keep empty chunks after splitting")
+    trim_whitespace: bool = Field(True, description="Trim whitespace from chunks")
 
 
 class ProcessConfig(BaseModel):
     """Configuration for a process containing multiple chained steps."""
     name: str = Field(..., description="Name for this process")
-    keep_separator: bool = Field(False, description="Whether to keep separators in chunks")
-    chunk_overlap: int = Field(256, description="Overlap between chunks")
     steps: List[StepConfig] = Field(..., description="List of steps to apply in sequence")
 
 

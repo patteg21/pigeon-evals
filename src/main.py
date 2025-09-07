@@ -3,9 +3,8 @@ import asyncio
 from pathlib import Path
 from typing import List
 
-from utils import logger
-from models import YamlConfig
-
+from utils import logger, DataLoader
+from models import YamlConfig, Document, DocumentChunk
 from runner import EmebeddingRunner, StorageRunner, ReportRunner, ParserRunner
 
 def load_yaml_config(config_path: str) -> List[YamlConfig]:
@@ -34,16 +33,18 @@ async def main():
         
         # Process each configuration
         for config in configs:
+
+            loader = DataLoader(config.dataset)
+            documents: List[Document] = loader.load()
+
             logger.info(f"Processing configuration: {config.task}")
 
-            if config.preprocess:
-                logger.info("Preprocessing Data... ")
-                pass
 
             if config.parser:
                 logger.info("Parsing Data... ")
-
-                pass
+                parser_runner = ParserRunner(config.parser)
+                document_chunks: List[DocumentChunk] = await parser_runner.run(documents)
+                print(len(document_chunks))
 
             if config.embedding:            
                 config.embedding
