@@ -5,11 +5,21 @@ threading:
 
 preprocess:
   ocr: "easyocr"
-parser:
-  type: "regex"
-  patterns:
-    - ".*"
 
+parser:
+  type: "multistage"
+  processes:
+    - name: "table_extraction"
+      keep_separator: true
+      chunk_overlap: 0
+      steps:
+        - strategy: "regex"
+          regex_pattern: "\\[TABLE_START\\][\\s\\S]*?\\[TABLE_END\\]"
+        - 
+    
+    -name: "paragraph_extraction"
+
+    
 embedding:
   provider: "huggingface"
   model: "sentence-transformers/all-MiniLM-L6-v2"

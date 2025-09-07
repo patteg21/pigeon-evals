@@ -1,7 +1,6 @@
-from typing import Optional, List, Any
-from datetime import datetime
+from typing import Optional, List
 
-from pydantic import BaseModel, model_validator, Field
+from pydantic import BaseModel
 
 
 class Metadata(BaseModel):
@@ -11,13 +10,13 @@ class Metadata(BaseModel):
 class Document(BaseModel):
     id: str
     name: str
+    text: str
 
 
 
 class DocumentChunk(BaseModel):
     id: str
     text: str
-    type_chunk: str
     document: Document 
     embeddding: Optional[List[float]] = None
 

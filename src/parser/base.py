@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from typing import Any, Dict
 
-from models.configs import ParserConfig
+from models.configs.configs import ParserConfig
 
 
 class BaseParser(ABC):

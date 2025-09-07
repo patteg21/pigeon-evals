@@ -1,4 +1,4 @@
-from typing import Optional, Union, Literal
+from typing import Optional, Union, Literal, List
 from pathlib import Path
 from uuid import uuid4
 import yaml
@@ -29,6 +29,13 @@ class PreprocessConfig(BaseModel):
     vllm: Optional[bool] = Field(None, description="VLLM for processing...")
 
 
+# === Dataset Config
+class DatasetConfig(BaseModel):
+    provider: Optional[Literal['local', 's3']] = Field("local", description="File Path for the files...")
+    path: str = Field(None, description="Path to dataset")
+
+    allowed_types: Optional[List[str]] = ["txt"] # todo handle multiple files
+
 
 # === General Config
 
@@ -38,11 +45,12 @@ class YamlConfig(BaseModel):
     task: str = Field(..., description="Task name")
     
     # general
+    dataset: Optional[DatasetConfig] = Field(None, description="Dataset and Configs")
     threading: Optional[ThreadingConfig] = Field(None, description="Threading number of workers")
-    dataset_path: Optional[str] = Field(None, description="Path to dataset")
+    preprocess: Optional[PreprocessConfig] = Field(None, description="Preprocessing of Documents")
+
 
     # document processing
-    preprocess: Optional[PreprocessConfig] = Field(None, description="Preprocessing of Documents")
     parser: Optional[ParserConfig] = Field(None, description="Document Parser configuration")
     embedding: Optional[EmbeddingConfig] = Field(None, description="Embedding configuration")
     

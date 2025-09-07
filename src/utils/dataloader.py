@@ -6,4 +6,6 @@ class DataLoader():
         pass
 
 
-    def load(self, )
+    def load(self, dataset_path: str):
+        
+        pass
