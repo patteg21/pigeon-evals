@@ -3,8 +3,11 @@ import sqlite3
 from typing import Optional, List, Dict, Any
 from contextlib import contextmanager
 from pathlib import Path
+import json
 
 from .base import TextStorageBase, TextStorageError
+from models.documents import DocumentChunk
+from models.configs.storage import SqliteConfig
 
 
 class SQLiteError(TextStorageError):
@@ -13,10 +16,10 @@ class SQLiteError(TextStorageError):
 
 
 class SQLiteDB(TextStorageBase):
-    def __init__(self, config: Dict[str, Any] = None):
+    def __init__(self, config: SqliteConfig):
         """Initialize SQLite client with database path"""
         super().__init__(config)
-        self.db_path = self.config.get("path", "data/.sql/chunks.db")
+        self.db_path = self.config.path or "data/.sql/chunks.db"
         # Ensure directory exists
         Path(self.db_path).parent.mkdir(parents=True, exist_ok=True)
         self._initialize_db()
@@ -36,6 +39,8 @@ class SQLiteDB(TextStorageBase):
                 CREATE TABLE IF NOT EXISTS documents (
                     id TEXT PRIMARY KEY,
                     text TEXT NOT NULL,
+                    document_data TEXT,
+                    embedding TEXT,
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                 )
             """)
@@ -65,14 +70,37 @@ class SQLiteDB(TextStorageBase):
                 cursor = conn.cursor()
                 
                 cursor.execute("""
-                    INSERT OR REPLACE INTO documents (id, text) VALUES (?, ?)
-                """, (doc_id, doc_data.get('text')))
+                    INSERT OR REPLACE INTO documents (id, text, document_data, embedding) VALUES (?, ?, ?, ?)
+                """, (doc_id, doc_data.get('text'), json.dumps(doc_data.get('document_data')), json.dumps(doc_data.get('embedding'))))
                 
                 conn.commit()
                 return True
                 
         except Exception as e:
             raise SQLiteError(f"Failed to store document {doc_id}: {str(e)}")
+
+    def store_document_chunk(self, chunk: DocumentChunk) -> bool:
+        """Store DocumentChunk in SQLite database"""
+        try:
+            with self._get_connection() as conn:
+                cursor = conn.cursor()
+                
+                document_data = {
+                    'id': chunk.document.id,
+                    'name': chunk.document.name,
+                    'path': chunk.document.path,
+                    'text': chunk.document.text
+                }
+                
+                cursor.execute("""
+                    INSERT OR REPLACE INTO documents (id, text, document_data, embedding) VALUES (?, ?, ?, ?)
+                """, (chunk.id, chunk.text, json.dumps(document_data), json.dumps(chunk.embeddding)))
+                
+                conn.commit()
+                return True
+                
+        except Exception as e:
+            raise SQLiteError(f"Failed to store document chunk {chunk.id}: {str(e)}")
     
 
     def retrieve_document(self, doc_id: str) -> Optional[Dict[str, Any]]:

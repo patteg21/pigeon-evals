@@ -1,5 +1,8 @@
 from .base import TextStorageBase
 from .sqlite import SQLiteDB
+from .postgres import PostgresDB
+from .s3 import S3Storage
+from .file_store import FileStore
 from utils.logger import logger
 from pathlib import Path
 from typing import Dict, Any, Optional
@@ -10,9 +13,9 @@ class TextStorageFactory:
     
     _providers = {
         "sqlite": SQLiteDB,
-        # "postgres": PostgresDB,    # Add when implemented
-        # "s3": S3Storage,          # Add when implemented
-        # "file": FileStore,        # Add when implemented
+        "postgres": PostgresDB,
+        "s3": S3Storage,
+        "file": FileStore,
     }
     
     @classmethod
