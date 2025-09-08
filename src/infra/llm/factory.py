@@ -2,6 +2,7 @@ from .base import LLMBaseClient
 from .openai import OpenAILLM
 from .anthropic import AnthropicLLM
 from .gemini import GeminiLLM
+from .bedrock import BedrockLLM
 from utils.logger import logger
 from pathlib import Path
 from typing import Dict, Any, Optional
@@ -14,6 +15,7 @@ class LLMFactory:
         "openai": OpenAILLM,
         "anthropic": AnthropicLLM,
         "gemini": GeminiLLM,
+        "bedrock": BedrockLLM,
     }
     
     @classmethod

@@ -4,8 +4,7 @@ import asyncio
 import time
 import numpy as np
 import diskcache as dc
-from utils.types import DocumentChunk
-from utils.types import Pooling
+from models import DocumentChunk, Pooling
 from utils import logger
 
 cache = dc.Cache("data/.cache")

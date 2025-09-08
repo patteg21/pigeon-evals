@@ -1,6 +1,8 @@
 from .base import LLMBaseClient
 from typing import Dict, Any, Optional
 from utils.logger import logger
+import anthropic
+import os
 
 class AnthropicLLM(LLMBaseClient):
     """Anthropic LLM client."""
@@ -8,6 +10,12 @@ class AnthropicLLM(LLMBaseClient):
     def __init__(self, config: Dict[str, Any] = None):
         super().__init__(config)
         self.model = self.config.get("model", "claude-3-haiku-20240307")
+        self.api_key = self.config.get("api_key") or os.getenv("ANTHROPIC_API_KEY")
+        
+        if not self.api_key:
+            raise ValueError("Anthropic API key not found in config or environment variables")
+        
+        self.client = anthropic.Anthropic(api_key=self.api_key)
         logger.info(f"Initializing Anthropic LLM with model: {self.model}")
     
     @property
@@ -22,6 +30,21 @@ class AnthropicLLM(LLMBaseClient):
             raise ValueError("Must specify either prompt or query")
         
         text = prompt or query
-        # TODO: Implement Anthropic API call
-        logger.info(f"Anthropic invoke called with text length: {len(text)}")
-        return f"Anthropic response to: {text[:50]}..."
+        
+        try:
+            response = self.client.messages.create(
+                model=self.model,
+                max_tokens=kwargs.get("max_tokens", 1000),
+                temperature=kwargs.get("temperature", 0.7),
+                messages=[
+                    {"role": "user", "content": text}
+                ]
+            )
+            
+            result = response.content[0].text
+            logger.info(f"Anthropic invoke successful, response length: {len(result)}")
+            return result
+            
+        except Exception as e:
+            logger.error(f"Anthropic API call failed: {str(e)}")
+            raise
