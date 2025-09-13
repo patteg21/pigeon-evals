@@ -1,4 +1,8 @@
+from typing import List
+
 from runner.base import Runner
+from models import Document
+
 
 class EmebeddingRunner(Runner):
     
@@ -8,6 +12,8 @@ class EmebeddingRunner(Runner):
     
     async def run(
             self, 
+                        documents: List[Document] 
+
         ):
 
         pass

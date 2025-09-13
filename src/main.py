@@ -47,7 +47,8 @@ async def main():
                 print(len(document_chunks))
 
             if config.embedding:            
-                config.embedding
+                embedding_runner = EmebeddingRunner(config.embedding)
+                await embedding_runner.run()
 
 
             if config.storage:

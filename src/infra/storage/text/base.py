@@ -1,8 +1,6 @@
 from abc import ABC, abstractmethod
 from typing import Optional, List, Dict, Any, Union
 
-from pydantic import BaseModel
-
 from models import DocumentChunk
 from models.configs.storage import SqliteConfig, PostgresConfig, FileStoreConfig, S3Config
 
