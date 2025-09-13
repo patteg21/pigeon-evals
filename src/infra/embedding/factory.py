@@ -5,6 +5,8 @@ from utils.logger import logger
 from pathlib import Path
 from typing import Dict, Any, Optional
 
+from models.configs import EmbeddingConfig
+
 
 class EmbedderFactory:
     """Factory for creating embedder instances based on provider."""
@@ -15,14 +17,14 @@ class EmbedderFactory:
     }
     
     @classmethod
-    def create(cls, provider: str, config: Dict[str, Any]) -> BaseEmbedder:
+    def create(cls, provider: str, config: EmbeddingConfig) -> BaseEmbedder:
         """Create an embedder instance for the specified provider."""
         if provider not in cls._providers:
             logger.warning(f"Unknown embedder provider '{provider}', falling back to HuggingFace")
             provider = "huggingface"
         
         embedder_class = cls._providers[provider]
-        logger.info(f"Creating {provider.title()} embedder with model: {config.get('model', 'default')}")
+        logger.info(f"Creating {provider.title()} embedder with model: {config.model}")
         return embedder_class(config)
     
     @classmethod

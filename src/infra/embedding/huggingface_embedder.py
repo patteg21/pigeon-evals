@@ -1,22 +1,27 @@
 from typing import Dict, Any, List
 import torch
 from sentence_transformers import SentenceTransformer
-from utils.types.chunks import DocumentChunk
+
+from models import DocumentChunk
+from models.configs import EmbeddingConfig
 from utils import logger
+
 from .base import BaseEmbedder
 
 
 class HuggingFaceEmbedder(BaseEmbedder):
     """Hugging Face embedding provider using sentence-transformers."""
     
-    def __init__(self, config: Dict[str, Any] = None):
+    def __init__(self, config: EmbeddingConfig):
         super().__init__(config)
         
         # Get model configuration
-        model_name = self.config.get("model", "all-MiniLM-L6-v2")
-        self.device = self.config.get("device", "auto")
-        self.batch_size = self.config.get("batch_size", 32)
-        self.max_seq_length = self.config.get("max_seq_length", None)  # Use model default if None
+        model_name = config.model
+
+        # TODO: Allow users to switch these 
+        self.device = "auto"
+        self.batch_size = 32
+        self.max_seq_length = None  # Use model default if None
         
         # Auto-detect device if not specified
         if self.device == "auto":

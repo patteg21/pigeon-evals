@@ -9,12 +9,11 @@ import diskcache as dc
 from dotenv import load_dotenv
 from openai import AsyncOpenAI, RateLimitError
 
-from utils.types import DocumentChunk
-from utils.types import Pooling
+from models import Pooling, DocumentChunk
+from models.configs import EmbeddingConfig
 from utils import logger
 
 from .dimensional_reduction import PCAReducer
-
 from .base import BaseEmbedder
 
 load_dotenv()
@@ -30,10 +29,11 @@ class OpenAIEmbedder(BaseEmbedder):
         # add models as needed
     }
     
-    def __init__(self, config: Dict[str, Any] | None = None, pca_path: str | None = None):
+    def __init__(self, config: EmbeddingConfig):
         super().__init__(config)
-        self.model = self.config.get("model", "text-embedding-3-small")
-        self.pooling_strategy = self.config.get("pooling_strategy", "mean")
+        self.model = config.model
+        self.pooling_strategy = config.pooling_strategy
+
         
         if self.model not in self.TOKEN_LIMITS:
             raise ValueError(f"Unsupported model '{self.model}'. Provide max_tokens explicitly or add to TOKEN_LIMITS.")
@@ -44,12 +44,6 @@ class OpenAIEmbedder(BaseEmbedder):
         
 
         self.pca_reducer:  PCAReducer | None = None
-        if pca_path:
-            logger.warning("PCA REDUCER HAS BEEN ACTIVATED")
-            try:
-                self.pca_reducer = PCAReducer({"path": pca_path}).load()
-            except Exception:
-                self.pca_reducer = None
 
         logger.info(f"Initializing OpenAI embedder with model: {self.model}, pooling_strategy: {self.pooling_strategy}")
     

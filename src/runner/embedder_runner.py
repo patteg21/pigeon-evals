@@ -1,7 +1,9 @@
 from typing import List
 
 from runner.base import Runner
-from models import Document
+from models import DocumentChunk
+
+from infra.embedding import EmbedderFactory
 
 
 class EmebeddingRunner(Runner):
@@ -12,8 +14,10 @@ class EmebeddingRunner(Runner):
     
     async def run(
             self, 
-                        documents: List[Document] 
-
+            chunks: List[DocumentChunk] 
         ):
+
+        for chunk in chunks:
+            pass
 
         pass
