@@ -5,7 +5,8 @@ from typing import List
 
 from utils import logger, DataLoader
 from models import YamlConfig, Document, DocumentChunk
-from runner import EmebeddingRunner, StorageRunner, ReportRunner, ParserRunner
+from runner import EmbeddingRunner, StorageRunner, ReportRunner, ParserRunner
+from utils.dry_run import set_dry_run_mode
 
 def load_yaml_config(config_path: str) -> List[YamlConfig]:
     """Load YAML configuration file and return list of configs."""
@@ -18,8 +19,15 @@ async def main():
     parser = argparse.ArgumentParser(description='Run evaluation with YAML configuration')
     parser.add_argument('--config', '-c', type=str, required=False, default="configs/test.yml",
                        help='Path to YAML configuration file (default: configs/test.yml)')
+    parser.add_argument('--dry-run', action='store_true',
+                       help='Run in dry mode with mock responses (no actual embedding/storage calls)')
     
     args = parser.parse_args()
+    
+    # Set dry run mode if specified
+    if args.dry_run:
+        set_dry_run_mode(True)
+        logger.info("Running in DRY RUN mode - using mock responses")
     
     # Validate config file exists
     config_path = Path(args.config)
@@ -47,8 +55,8 @@ async def main():
                 print(len(document_chunks))
 
             if config.embedding:            
-                embedding_runner = EmebeddingRunner(config.embedding)
-                await embedding_runner.run()
+                embedding_runner = EmbeddingRunner()
+                embedded_chunks: List[DocumentChunk] = await embedding_runner.run(document_chunks)
 
 
             if config.storage:
