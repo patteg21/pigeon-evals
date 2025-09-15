@@ -4,7 +4,7 @@ from typing import Optional, List, Dict, Any
 from pathlib import Path
 
 from .base import TextStorageBase, TextStorageError
-from src.models.documents import DocumentChunk
+from models.documents import DocumentChunk
 from models.configs.storage import FileStoreConfig
 
 

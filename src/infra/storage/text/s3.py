@@ -4,7 +4,7 @@ from botocore.exceptions import ClientError, NoCredentialsError
 from typing import Optional, List, Dict, Any
 
 from .base import TextStorageBase, TextStorageError
-from src.models.documents import DocumentChunk
+from models.documents import DocumentChunk
 from models.configs.storage import S3Config
 
 

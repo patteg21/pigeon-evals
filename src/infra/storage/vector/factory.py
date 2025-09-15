@@ -1,11 +1,11 @@
 from .base import VectorStorageBase
 from .faiss import FAISSVectorDB
+from models.shared.base_factory import BaseFactory
 from utils.logger import logger
-from pathlib import Path
 from typing import Dict, Any, Optional
 
 
-class VectorStorageFactory:
+class VectorStorageFactory(BaseFactory):
     """Factory for creating vector storage instances based on provider."""
     
     _providers = {
@@ -26,23 +26,21 @@ class VectorStorageFactory:
         return storage_class(config)
     
     @classmethod
-    def create_from_config(cls, config_path: Optional[str] = None) -> VectorStorageBase:
-        """Create vector storage instance by auto-discovering or using provided config."""
-        if config_path:
-            config_paths = [config_path]
-        else:
-            config_paths = ["configs/test.yml", "config.yml", "test.yml"]
-        
-        for path in config_paths:
-            if Path(path).exists():
-                logger.info(f"Auto-loading vector storage config from {path}")
-                from src.utils.types.configs import YamlConfig
-                yaml_config = YamlConfig.from_yaml(path)
-                if yaml_config.storage and yaml_config.storage.vector:
-                    config_dict = yaml_config.storage.vector.model_dump()
-                    provider = config_dict.get("provider", "faiss")
-                    return cls.create(provider, config_dict)
-                break
-        
-        logger.info("No vector storage config found, using default FAISS")
-        return cls.create("faiss", {})
+    def get_config_key(cls) -> str:
+        return "vector storage"
+
+    @classmethod
+    def get_default_provider(cls) -> str:
+        return "faiss"
+
+    @classmethod
+    def get_default_config(cls) -> Dict[str, Any]:
+        return {}
+
+    @classmethod
+    def _extract_config_from_yaml(cls, yaml_config) -> Optional[Any]:
+        return yaml_config.storage.vector if yaml_config.storage else None
+
+    @classmethod
+    def _extract_provider_from_config(cls, config_dict: Dict[str, Any]) -> str:
+        return config_dict.get("provider", "faiss")
