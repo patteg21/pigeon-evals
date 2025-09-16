@@ -53,6 +53,7 @@ class EvaluationConfig(BaseModel):
 
     provider: str = Field(..., description="Generator provider")
     model: str = Field(..., description="Generator model name")
+    api_key: Optional[str] = Field(None, description="API Key for associated model")
 
     evaluations: bool = Field(True, description="If evaluations are being used for this...")
     metrics: List[Literal["precision", "recall", "hit-rate", "mrr", "ndcg"]] = Field(

@@ -10,10 +10,12 @@ from .eval import EvaluationConfig
 from .parser import ParserConfig
 from .storage import StorageConfig
 
-# === Checkpoint Config
 
-class CheckPoint(BaseModel):
-    pass
+class SubConfig(BaseModel):
+    output: bool = Field(False, description="Output data from this selected portion")
+    client: Literal["local", "s3"] = Field("local", description="Where to output the data")
+    path: str = Field("data/checkpoint/", description="The path of where to dump the ouputs")
+
 
 
 # === Threading Config

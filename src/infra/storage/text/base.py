@@ -1,6 +1,8 @@
 from abc import ABC, abstractmethod
-from typing import Optional, List, Dict, Any
+from typing import Optional, List, Dict, Any, Union
 
+from models import DocumentChunk
+from models.configs.storage import SqliteConfig, PostgresConfig, FileStoreConfig, S3Config
 
 class TextStorageError(Exception):
     """Base exception for text storage operations"""
@@ -10,8 +12,8 @@ class TextStorageError(Exception):
 class TextStorageBase(ABC):
     """Abstract base class for text storage implementations"""
     
-    def __init__(self, config: Dict[str, Any] = None):
-        self.config = config or {}
+    def __init__(self, config: Union[SqliteConfig, PostgresConfig, FileStoreConfig, S3Config]):
+        self.config = config
     
     @property
     @abstractmethod
@@ -23,6 +25,19 @@ class TextStorageBase(ABC):
     def store_document(self, doc_id: str, doc_data: Dict[str, Any]) -> bool:
         """Store document data in the text storage system"""
         pass
+    
+    def store_document_chunk(self, chunk: "DocumentChunk") -> bool:
+        """Store DocumentChunk in the text storage system"""
+        return self.store_document(chunk.id, {
+            'text': chunk.text,
+            'document_data': {
+                'id': chunk.document.id,
+                'name': chunk.document.name,
+                'path': chunk.document.path,
+                'text': chunk.document.text
+            },
+            'embedding': chunk.embeddding
+        })
     
     @abstractmethod
     def retrieve_document(self, doc_id: str) -> Optional[Dict[str, Any]]:

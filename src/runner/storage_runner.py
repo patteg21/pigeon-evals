@@ -1,4 +1,11 @@
+from typing import List
+
+from models import DocumentChunk
+
+from infra.storage.text import TextStorageFactory
+from infra.storage.vector import VectorStorageFactory
 from runner.base import Runner
+
 
 class StorageRunner(Runner):
     
@@ -7,7 +14,9 @@ class StorageRunner(Runner):
         pass
     
     async def run(
-            self, 
-        ):
+            self,
+            documents: List[DocumentChunk] 
+        ) -> None:
+
 
         pass

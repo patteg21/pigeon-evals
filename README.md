@@ -15,13 +15,13 @@
 Pigeon Evals is a **modular RAG evaluation framework** designed for comprehensive **document processing**, **retrieval system benchmarking**, and **LLM evaluation**. It provides end-to-end functionality from document ingestion to performance evaluation, with support for multiple storage backends, embedding providers, and evaluation methodologies.
 
 ### Perfect for:
-- 🔍 **RAG system evaluation** and performance benchmarking  
-- 📊 **Document processing pipeline** evaluation and optimization
-- 📈 **Semantic search** and retrieval quality assessment
-- 🤖 **AI agent evaluation** with MCP (Model Context Protocol) integration
-- 🏗️ **Research and production** RAG system development
-- 📚 **Vector database** experimentation and comparison
-- 📋 **Multi-modal evaluation** (Human, LLM, and Agent-based)
+- **RAG system evaluation** and performance benchmarking  
+- **Document processing pipeline** evaluation and optimization
+- **Semantic search** and retrieval quality assessment
+- **AI agent evaluation** with MCP (Model Context Protocol) integration
+- **Research and production** RAG system development
+- **Vector database** experimentation and comparison
+- **Multi-modal evaluation** (Human, LLM, and Agent-based)
 
 ## Environment
 
