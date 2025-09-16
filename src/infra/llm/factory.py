@@ -3,12 +3,11 @@ from .openai import OpenAILLM
 from .anthropic import AnthropicLLM
 from .gemini import GeminiLLM
 from .bedrock import BedrockLLM
-from models.shared.base_factory import BaseFactory
 from utils.logger import logger
 from typing import Dict, Any, Optional
 
 
-class LLMFactory(BaseFactory):
+class LLMFactory():
     """Factory for creating LLM instances based on provider."""
     
     _providers = {

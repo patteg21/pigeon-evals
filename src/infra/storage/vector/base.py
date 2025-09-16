@@ -50,3 +50,5 @@ class VectorStorageBase(ABC):
     def clear(self) -> Any:
         """Clear all vectors from the database"""
         pass
+
+    

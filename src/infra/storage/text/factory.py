@@ -10,7 +10,7 @@ from typing import Optional
 
 
 
-class TextStorageFactory(BaseFactory):
+class TextStorageFactory():
     """Factory for creating text storage instances based on provider."""
     
     _providers = {
@@ -47,7 +47,14 @@ class TextStorageFactory(BaseFactory):
 
             storage_class = cls._providers[provider]
             logger.info(f"Creating {provider.upper()} text storage from config")
-            return storage_class(text_config)
+            storage_instance = storage_class(text_config)
+
+            # Clear storage if configured to do so
+            if hasattr(text_config, 'clear') and text_config.clear:
+                logger.info(f"Clearing {provider.upper()} text storage as requested by config")
+                storage_instance.clear_all()
+
+            return storage_instance
         else:
             logger.info("No text storage config found, skipping text storage")
             return None

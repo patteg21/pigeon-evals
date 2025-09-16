@@ -1,4 +1,4 @@
-from typing import Dict, Any, List
+from typing import Dict, List
 import os
 import asyncio
 import time
@@ -8,6 +8,7 @@ import numpy as np
 import diskcache as dc
 from dotenv import load_dotenv
 from openai import AsyncOpenAI, RateLimitError
+from tqdm.asyncio import tqdm
 
 from models import Pooling, DocumentChunk
 from models.configs import EmbeddingConfig
@@ -31,8 +32,6 @@ class OpenAIEmbedder(BaseEmbedder):
     
     def __init__(self, config: EmbeddingConfig):
         super().__init__(config)
-        self.model = config.model
-        self.pooling_strategy = config.pooling_strategy
 
         
         if self.model not in self.TOKEN_LIMITS:
@@ -136,7 +135,7 @@ class OpenAIEmbedder(BaseEmbedder):
         chunks = self._chunk_by_tokens(text, chunk_max_tokens, overlap_tokens)
 
         embs: List[List[float]] = []
-        for i in range(0, len(chunks), batch_size):
+        for i in tqdm(range(0, len(chunks), batch_size), desc="Creating embeddings"):
             embs.extend(await self.create_embeddings_batch(chunks[i:i+batch_size]))
 
         vecs = np.asarray(embs, dtype=np.float32)
@@ -156,43 +155,32 @@ class OpenAIEmbedder(BaseEmbedder):
         """Get raw OpenAI embeddings for a single chunk."""
         return await self.create_embedding(chunk.text, strategy=self.pooling_strategy)
     
-    async def _embed_chunks_raw(self, chunks: List[DocumentChunk], batch_size=32) -> List[List[float]]:
+    async def _embed_chunks_raw(self, chunks: List[DocumentChunk]) -> List[List[float]]:
         """Get raw OpenAI embeddings for multiple chunks (batch optimized)."""
+        # Use batch_size from config, -1 means process all at once
+        batch_size = len(chunks) if self.batch_size == -1 else self.batch_size
+
         embeddings = []
-        oversized_chunks = []
-        oversized_indices = []
-        
-        for i in range(0, len(chunks), batch_size):
-            batch_chunks = chunks[i:i + batch_size]
-            batch_texts = []
-            batch_chunk_indices = []
-            
-            # Separate normal and oversized chunks
-            for j, chunk in enumerate(batch_chunks):
-                token_count = await self.count_tokens(chunk.text)
+        texts = [chunk.text for chunk in chunks]
+
+        # Process in batches
+        for i in tqdm(range(0, len(texts), batch_size), desc="Embedding batches"):
+            batch_texts = texts[i:i + batch_size]
+
+            # Process each text in batch, handling oversized ones individually
+            batch_embeddings = []
+            for text in batch_texts:
+                token_count = await self.count_tokens(text)
                 if token_count <= self.max_tokens:
-                    batch_texts.append(chunk.text)
-                    batch_chunk_indices.append(i + j)
+                    # Can use direct API call for normal sized text
+                    embedding = await self._embeddings(text)
                 else:
-                    oversized_chunks.append(chunk)
-                    oversized_indices.append(i + j)
-            
-            # Process normal chunks in batch
-            if batch_texts:
-                batch_embeddings = await self.create_embeddings_batch(batch_texts)
-                # Insert embeddings at correct positions
-                for embedding, idx in zip(batch_embeddings, batch_chunk_indices):
-                    while len(embeddings) <= idx:
-                        embeddings.append(None)
-                    embeddings[idx] = embedding
-        
-        # Process oversized chunks individually with configured pooling strategy
-        for chunk, idx in zip(oversized_chunks, oversized_indices):
-            embedding = await self.create_embedding(chunk.text, strategy=self.pooling_strategy)
-            while len(embeddings) <= idx:
-                embeddings.append(None)
-            embeddings[idx] = embedding
-        
+                    # Use chunking strategy for oversized text
+                    embedding = await self.create_embedding(text, strategy=self.pooling_strategy)
+                batch_embeddings.append(embedding)
+
+            embeddings.extend(batch_embeddings)
+
         return embeddings
     
 

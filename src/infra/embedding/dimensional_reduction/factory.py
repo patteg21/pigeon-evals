@@ -1,3 +1,5 @@
+from typing import Optional
+
 from .base import BaseDimensionalReducer
 from .pca_reducer import PCAReducer
 from utils.logger import logger

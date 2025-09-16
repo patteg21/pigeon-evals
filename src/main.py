@@ -53,7 +53,6 @@ async def main():
             logger.info("Parsing Data... ")
             parser_runner = ParserRunner(config.parser)
             document_chunks: List[DocumentChunk] = await parser_runner.run(documents)
-            print(len(document_chunks))
 
         if config.embedding:
             embedding_runner = EmbeddingRunner()

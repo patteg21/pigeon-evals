@@ -1,6 +1,6 @@
 task: "example_eval_task"
 dataset: 
-  path: "data/processed_filings/META"
+  path: "data/processed_filings/META/META_10K_2020-01-30.txt"
 
 threading:
   max_workers: 8
@@ -31,9 +31,11 @@ embedding:
   provider: "huggingface"
   model: "sentence-transformers/all-MiniLM-L6-v2"
   pooling_strategy: "mean"
+  batch_size: -1 
   dimension_reduction:
     type: "PCA"
     dims: 256
+    
   use_threading: true
 
 
@@ -42,6 +44,7 @@ storage:
     client: "sqlite"
     path: "./data/text_store.db"
     upload: true
+    clear: true
 
     # PostgreSQL options (commented out):
     # host: "localhost"
@@ -63,8 +66,8 @@ storage:
     provider: "faiss"  # Added explicit provider
     path: "./data/.faiss/index"
     upload: true
-    
-    clear: false
+    clear: true
+
     index: "eval_index"
     dimension: 256  # Added to match embedding dimension_reduction
     # Alternative vector options (commented out):
