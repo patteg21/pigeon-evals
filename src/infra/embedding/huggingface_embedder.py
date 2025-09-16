@@ -85,7 +85,7 @@ class HuggingFaceEmbedder(BaseEmbedder):
             embedding = self.model.encode(
                 chunk.text, 
                 convert_to_tensor=False,  # Return numpy array
-                normalize_embeddings=self.config.get("normalize", True)
+                normalize_embeddings=True # self.config.get("normalize", True)
             )
             return embedding.tolist()
             
@@ -108,7 +108,7 @@ class HuggingFaceEmbedder(BaseEmbedder):
                 batch_embeddings = self.model.encode(
                     batch_texts,
                     convert_to_tensor=False,  # Return numpy arrays
-                    normalize_embeddings=self.config.get("normalize", True),
+                    normalize_embeddings= True, #self.config.get("normalize", True),
                     show_progress_bar=False  # Disable progress bar for batches
                 )
                 
@@ -133,5 +133,5 @@ class HuggingFaceEmbedder(BaseEmbedder):
             "embedding_dimension": self.model.get_sentence_embedding_dimension(),
             "max_seq_length": self.model.max_seq_length,
             "device": str(self.model.device),
-            "normalize_embeddings": self.config.get("normalize", True)
+            "normalize_embeddings": True, # self.config.get("normalize", True)
         }

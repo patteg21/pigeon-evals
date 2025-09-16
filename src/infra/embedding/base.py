@@ -1,10 +1,11 @@
 from abc import ABC, abstractmethod
-from typing import List, Dict, Any, Iterable
+from typing import List, Iterable
 import asyncio
 import time
 import numpy as np
 import diskcache as dc
 from models import DocumentChunk, Pooling
+from models.configs import EmbeddingConfig
 from utils import logger
 
 cache = dc.Cache("data/.cache")
@@ -13,20 +14,20 @@ cache = dc.Cache("data/.cache")
 class BaseEmbedder(ABC):
     """Base class for all embedding providers."""
     
-    def __init__(self, config: Dict[str, Any] = None):
-        self.config = config or {}
+    def __init__(self, config: EmbeddingConfig):
+        self.config = config
         self.reducer = None
         self._setup_dimensional_reduction()
     
     def _setup_dimensional_reduction(self):
         """Setup dimensional reduction if configured."""
-        dimension_reduction = self.config.get("dimension_reduction")
+        dimension_reduction = self.config.dimension_reduction
         if dimension_reduction:
-            reduction_type = dimension_reduction.get("type")
+            reduction_type = dimension_reduction.type
             if reduction_type == "PCA":
                 from .dimensional_reduction import PCAReducer
                 self.reducer = PCAReducer(dimension_reduction)
-                logger.info(f"Configured PCA reduction to {dimension_reduction.get('dims', 512)} dimensions")
+                logger.info(f"Configured PCA reduction to {dimension_reduction.dims} dimensions")
             elif reduction_type in ["UMAP", "T-SNE"]:
                 raise NotImplementedError(f"{reduction_type} dimensional reduction not implemented yet")
             else:
