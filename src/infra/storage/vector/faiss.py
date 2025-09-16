@@ -81,6 +81,8 @@ class FAISSVectorDB(VectorStorageBase):
                 self.index = faiss.IndexFlatIP(self.dimension)
                 # Clear metadata since we're starting fresh
                 self.metadata = {}
+                # Save the new index immediately
+                self._save_index()
 
             faiss.normalize_L2(embedding)  # Normalize for cosine similarity
 
