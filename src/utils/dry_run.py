@@ -83,6 +83,7 @@ def _generate_mock_chunks(chunks: List[DocumentChunk], dimensions: int = 384) ->
     return chunks
 
 
+
 async def _generate_default_mock(func: Callable, *args, **kwargs) -> Any:
     """Generate default mock response based on function context."""
     # Check if this looks like an embedding function

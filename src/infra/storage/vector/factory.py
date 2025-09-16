@@ -1,12 +1,14 @@
 from .base import VectorStorageBase
 from .faiss import FAISSVectorDB
+from models.shared.base_factory import BaseFactory
 from utils.logger import logger
 from utils.config_manager import ConfigManager
 from models.configs.storage import VectorConfig
 from typing import Optional
 
 
-class VectorStorageFactory:
+
+class VectorStorageFactory(BaseFactory):
     """Factory for creating vector storage instances based on provider."""
     
     _providers = {
@@ -46,4 +48,4 @@ class VectorStorageFactory:
         else:
             logger.info("No vector storage config found, skipping vector storage")
             return None
-    
+

@@ -9,7 +9,8 @@ from models.configs.storage import TextStoreConfig
 from typing import Optional
 
 
-class TextStorageFactory:
+
+class TextStorageFactory(BaseFactory):
     """Factory for creating text storage instances based on provider."""
     
     _providers = {

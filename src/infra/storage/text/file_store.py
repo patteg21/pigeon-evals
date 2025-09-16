@@ -17,6 +17,7 @@ class FileStore(TextStorageBase):
     """Local file system storage implementation"""
     
     def __init__(self, config: TextStoreConfig):
+
         """Initialize file storage with base path"""
         super().__init__(config)
         self.base_path = Path(self.config.base_path, 'data/documents')
@@ -60,6 +61,7 @@ class FileStore(TextStorageBase):
                     'text': chunk.document.text
                 },
                 'embedding': chunk.embedding
+
             }
             
             with open(file_path, 'w', encoding='utf-8') as f:

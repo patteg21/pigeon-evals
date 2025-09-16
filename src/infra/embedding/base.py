@@ -27,6 +27,7 @@ class BaseEmbedder(ABC):
             self.reducer = DimensionalReductionFactory.create_reducer(self.config.dimension_reduction)
             if self.reducer:
                 logger.info(f"Configured {self.reducer.name} reduction to {self.config.dimension_reduction.dims} dimensions")
+
     
     @abstractmethod
     async def _embed_chunk_raw(self, chunk: DocumentChunk) -> List[float]:

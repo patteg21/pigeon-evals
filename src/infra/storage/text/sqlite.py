@@ -10,6 +10,7 @@ from models.documents import DocumentChunk
 from models.configs.storage import TextStoreConfig
 
 
+
 class SQLiteError(TextStorageError):
     """SQLite-specific exception for operations"""
     pass
@@ -17,6 +18,7 @@ class SQLiteError(TextStorageError):
 
 class SQLiteDB(TextStorageBase):
     def __init__(self, config: TextStoreConfig):
+
         """Initialize SQLite client with database path"""
         super().__init__(config)
         self.db_path = self.config.path or "data/.sql/chunks.db"
@@ -95,6 +97,7 @@ class SQLiteDB(TextStorageBase):
                 cursor.execute("""
                     INSERT OR REPLACE INTO documents (id, text, document_data, embedding) VALUES (?, ?, ?, ?)
                 """, (chunk.id, chunk.text, json.dumps(document_data), json.dumps(chunk.embedding)))
+
                 
                 conn.commit()
                 return True

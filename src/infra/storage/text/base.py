@@ -4,6 +4,7 @@ from typing import Optional, List
 from models import DocumentChunk
 from models.configs.storage import TextStoreConfig
 
+
 class TextStorageError(Exception):
     """Base exception for text storage operations"""
     pass
@@ -13,6 +14,7 @@ class TextStorageBase(ABC):
     """Abstract base class for text storage implementations"""
     
     def __init__(self, config: TextStoreConfig):
+
         self.config = config
     
     @property

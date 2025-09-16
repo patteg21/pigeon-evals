@@ -9,6 +9,7 @@ from models.documents import DocumentChunk
 from models.configs.storage import TextStoreConfig
 
 
+
 class PostgresError(TextStorageError):
     """PostgreSQL-specific exception for operations"""
     pass
@@ -16,6 +17,7 @@ class PostgresError(TextStorageError):
 
 class PostgresDB(TextStorageBase):
     def __init__(self, config: TextStoreConfig):
+
         """Initialize PostgreSQL client with connection parameters"""
         super().__init__(config)
         self.connection_params = {
@@ -99,6 +101,7 @@ class PostgresDB(TextStorageBase):
                             document_data = EXCLUDED.document_data,
                             embedding = EXCLUDED.embedding
                     """, (chunk.id, chunk.text, json.dumps(document_data), json.dumps(chunk.embedding)))
+
                     conn.commit()
                     return True
         except Exception as e:

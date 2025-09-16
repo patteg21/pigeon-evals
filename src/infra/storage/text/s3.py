@@ -15,6 +15,7 @@ class S3Error(TextStorageError):
 
 class S3Storage(TextStorageBase):
     def __init__(self, config: TextStoreConfig):
+
         """Initialize S3 client with configuration"""
         super().__init__(config)
         self.bucket_name = self.config.bucket_name or 'pigeon-evals-documents'
@@ -89,6 +90,7 @@ class S3Storage(TextStorageBase):
                     'text': chunk.document.text
                 },
                 'embedding': chunk.embedding
+
             }
             
             self.client.put_object(

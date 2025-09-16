@@ -147,6 +147,7 @@ wheels = [
 [[package]]
 name = "botocore"
 version = "1.40.31"
+
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "jmespath" },
@@ -156,6 +157,7 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/42/8a/6ed2ccd9f6b8930ed15e755667f8f5f32a568cf4e3bf31a8526dcf4ce562/botocore-1.40.31.tar.gz", hash = "sha256:9496b91bbe40ed01d341dc8f6ff0492d7f546e80f1a862b00ec5bc9045fa3324", size = 14340752, upload-time = "2025-09-15T19:38:35.659Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/42/98/0f6cfbc627a87d84cfc66ceb7d9b71d694313a32cddbe415b9f298c9e50b/botocore-1.40.31-py3-none-any.whl", hash = "sha256:4033a00f8c6a4b5c3acb30af9283963123917227a437e5fc165189d07bd3cf8a", size = 14013342, upload-time = "2025-09-15T19:38:32.098Z" },
+
 ]
 
 [[package]]
@@ -422,6 +424,7 @@ dependencies = [
     { name = "annotated-types" },
     { name = "anyio" },
     { name = "boto3" },
+
     { name = "botocore" },
     { name = "certifi" },
     { name = "charset-normalizer" },
@@ -482,6 +485,7 @@ requires-dist = [
     { name = "annotated-types", specifier = "==0.7.0" },
     { name = "anyio", specifier = "==4.9.0" },
     { name = "boto3", specifier = ">=1.40.31" },
+
     { name = "botocore", specifier = ">=1.40.25" },
     { name = "certifi", specifier = "==2025.4.26" },
     { name = "charset-normalizer", specifier = "==3.4.2" },

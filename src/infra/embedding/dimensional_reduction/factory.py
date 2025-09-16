@@ -3,7 +3,7 @@ from .pca_reducer import PCAReducer
 from utils.logger import logger
 from utils.config_manager import ConfigManager
 from models.configs.embedding import DimensionReduction
-from typing import Optional
+
 
 
 class DimensionalReductionFactory:
@@ -30,6 +30,7 @@ class DimensionalReductionFactory:
         logger.info(f"Creating {reducer_type.upper()} dimensional reducer")
         return reducer_class(dimension_config)
 
+
     @classmethod
     def create_from_config(cls) -> Optional[BaseDimensionalReducer]:
         """Create dimensional reducer instance using the singleton config."""
@@ -38,6 +39,7 @@ class DimensionalReductionFactory:
 
         if config.embedding and config.embedding.dimension_reduction:
             return cls.create_reducer(config.embedding.dimension_reduction)
+
         else:
             logger.info("No dimensional reduction config found, skipping")
             return None
