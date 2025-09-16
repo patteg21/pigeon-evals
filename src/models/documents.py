@@ -1,7 +1,7 @@
 from typing import Optional, List
 from uuid import uuid4
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class Metadata(BaseModel):
@@ -9,7 +9,7 @@ class Metadata(BaseModel):
     pass
 
 class Document(BaseModel):
-    id: str = uuid4().hex
+    id: str = Field(default_factory=lambda: uuid4().hex)
     name: str
     path: str
     text: str
@@ -17,10 +17,11 @@ class Document(BaseModel):
 
 
 class DocumentChunk(BaseModel):
-    id: str = uuid4().hex
+    id: str = Field(default_factory=lambda: uuid4().hex)
     text: str
-    document: Document 
-    embeddding: Optional[List[float]] = None
+    document: Document
+    embedding: Optional[List[float]] = None
+    type_chunk: Optional[str] = None
 
 
 class Table(BaseModel):

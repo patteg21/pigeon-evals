@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod
-from typing import List, Dict, Any, Optional
-from utils.types.chunks import DocumentChunk
+from typing import List, Optional, Any
+from models import DocumentChunk
+from models.configs.storage import VectorConfig
 
 class VectorStorageError(Exception):
     """Base exception for vector storage operations"""
@@ -10,8 +11,8 @@ class VectorStorageError(Exception):
 class VectorStorageBase(ABC):
     """Abstract base class for vector storage implementations"""
     
-    def __init__(self, config: Dict[str, Any] = None):
-        self.config = config or {}
+    def __init__(self, config: VectorConfig):
+        self.config = config
     
     @property
     @abstractmethod
@@ -31,11 +32,11 @@ class VectorStorageBase(ABC):
     
     @abstractmethod
     def query(
-        self, 
-        vector: List[float], 
-        top_k: int = 10, 
-        include_metadata: bool = True, 
-        filter: Optional[Dict[str, Any]] | None = None, 
+        self,
+        vector: List[float],
+        top_k: int = 10,
+        include_metadata: bool = True,
+        filter: Optional[dict] | None = None,
     ) -> Any:
         """Query the vector database for similar vectors"""
         pass

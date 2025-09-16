@@ -60,6 +60,47 @@ python src/main.py --config evals/configs/test.yml
 uv run src/main.py --config evals/configs/test.yml
 ```
 
+### Dry Run Mode
+
+The pipeline includes a comprehensive `--dry-run` mode for testing and development without making actual API calls or storage operations:
+
+```bash
+python src/main.py --config configs/test.yml --dry-run
+# or
+uv run src/main.py --config configs/test.yml --dry-run
+```
+
+#### What Dry Run Mode Does
+
+**Dry run mode provides mock implementations for all external operations:**
+
+- **Embedding Generation**: Generates deterministic mock embeddings instead of calling actual embedding providers (OpenAI/HuggingFace)
+- **Dimensionality Reduction**: Mocks PCA operations (fit, transform, save, load) without actual computation
+- **Storage Operations**: Simulates text and vector storage operations without persisting data
+- **Preserves Document Processing**: Still processes documents through the full pipeline, adding mock embeddings to chunks
+
+#### Key Benefits
+
+- **Cost-Free Testing**: No API costs from embedding providers
+- **Fast Development**: Skip expensive operations during development
+- **Pipeline Validation**: Verify configuration and data flow without side effects
+- **Deterministic Results**: Uses seeded random generation for consistent mock data
+
+#### Implementation Details
+
+The dry run system uses the `@dry_response` decorator to automatically mock functions when dry run mode is enabled. Mock embeddings are:
+
+- **Deterministic**: Uses `random.seed(42)` for reproducible results
+- **Realistic**: Generated as random floats between -1.0 and 1.0
+- **Dimension-Aware**: Respects configured embedding dimensions
+- **Preserves Chunks**: Adds embeddings to original document chunks (not copies)
+
+You can also enable dry run mode via environment variable:
+```bash
+export DRY_RUN=true
+python src/main.py --config configs/test.yml
+```
+
 ## Pipeline Architecture
 The pipeline follows a sequential processing flow:
 
@@ -79,14 +120,33 @@ The pipeline follows a sequential processing flow:
 
 ```bash
 task: "example_eval_task"
+dataset: 
+  path: "data/processed_filings/META"
 
 threading:
   max_workers: 8
 
 preprocess:
   ocr: "easyocr"
+
 parser:
-  todo: "something"
+  type: "multistage"
+  processes:
+    - name: "table_extraction"
+      steps:
+        - strategy: "regex"
+          regex_pattern: "\\[TABLE_START\\][\\s\\S]*?\\[TABLE_END\\]"
+          ignore_case: true
+
+    - name: "paragraph_extraction"
+      steps:
+        - strategy: "regex"
+          regex_pattern: "\\[PAGE BREAK\\]"
+          ignore_case: true
+        - strategy: "paragraph"
+          chunk_size: null
+          chunk_overlap: 256 
+
 
 embedding:
   provider: "huggingface"
@@ -103,10 +163,33 @@ storage:
     client: "sqlite"
     path: "./data/text_store.db"
     upload: true
+
+    # PostgreSQL options (commented out):
+    # host: "localhost"
+    # port: 5432
+    # database: "pigeon_evals"
+    # user: "postgres"
+    # password: ""
+
+    # S3 options (commented out):
+    # bucket_name: "pigeon-evals-documents"
+    # prefix: "documents/"
+    # access_key_id: null
+    # secret_access_key: null
+    # region: "us-east-1"
+    
+    # File store options (commented out):
+    # base_path: "data/documents"
   vector:
+    provider: "faiss"  # Added explicit provider
+    path: "./data/.faiss/index"
     upload: true
+    
     clear: false
     index: "eval_index"
+    dimension: 256  # Added to match embedding dimension_reduction
+    # Alternative vector options (commented out):
+    # index_name: "alternative_index"
   outputs:
     - "chunks"
     - "documents"

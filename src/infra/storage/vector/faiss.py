@@ -1,12 +1,15 @@
 import faiss
 import numpy as np
-from typing import List, Dict, Any, Optional
+from typing import List, Optional, Any
 from pathlib import Path
 import pickle
 
 from .base import VectorStorageBase, VectorStorageError
-from utils.types import DocumentChunk
+
+from models import DocumentChunk
+from models.configs.storage import VectorConfig
 from utils.logger import logger
+
 
 
 class FAISSError(VectorStorageError):
@@ -15,20 +18,21 @@ class FAISSError(VectorStorageError):
 
 
 class FAISSVectorDB(VectorStorageBase):
-    def __init__(self, config: Dict[str, Any] = None):
+    def __init__(self, config: VectorConfig):
         """Initialize FAISS vector database"""
         super().__init__(config)
-        
-        index_path = self.config.get("index_path", "data/.faiss/index")
-        dimension = self.config.get("dimension", 768)
-        
-        self.index_path = Path(index_path)
+
+        # Use path field from VectorConfig, fallback to index, then index_name, then default
+        index_name = self.config.path or self.config.index or self.config.index_name or "data/.faiss/index"
+        dimension = self.config.dimension or 768
+
+        self.index_path = Path(index_name)
         self.dimension = dimension
         self.metadata_path = self.index_path.with_suffix('.metadata')
-        
+
         # Ensure directory exists
         self.index_path.parent.mkdir(parents=True, exist_ok=True)
-        
+
         # Initialize or load index
         self.index = None
         self.metadata = {}  # Store metadata separately
@@ -63,16 +67,28 @@ class FAISSVectorDB(VectorStorageBase):
     def upload(self, chunk: DocumentChunk) -> Any:
         """Upload a DocumentChunk with embeddings to FAISS"""
         try:
-            if not chunk.embeddding:  # Note: keeping original typo for compatibility
+            if not chunk.embedding:
                 raise FAISSError(f"Chunk {chunk.id} has no embeddings")
-            
+
             # Convert embedding to numpy array and normalize
-            embedding = np.array(chunk.embeddding, dtype=np.float32).reshape(1, -1)
+            embedding = np.array(chunk.embedding, dtype=np.float32).reshape(1, -1)
+
+            # Check if we need to recreate the index with correct dimension
+            actual_dimension = embedding.shape[1]
+            if actual_dimension != self.dimension:
+                logger.info(f"Recreating FAISS index with correct dimension {actual_dimension} (was {self.dimension})")
+                self.dimension = actual_dimension
+                self.index = faiss.IndexFlatIP(self.dimension)
+                # Clear metadata since we're starting fresh
+                self.metadata = {}
+                # Save the new index immediately
+                self._save_index()
+
             faiss.normalize_L2(embedding)  # Normalize for cosine similarity
-            
+
             # Add to index
             self.index.add(embedding)
-            
+
             # Store metadata
             vector_id = len(self.metadata)  # Use current count as ID
             self.metadata[vector_id] = {
@@ -81,11 +97,10 @@ class FAISSVectorDB(VectorStorageBase):
                 'document': chunk.document,
                 'type_chunk': chunk.type_chunk
             }
-            
+
             self._save_index()
-            logger.debug(f"Uploaded chunk {chunk.id} to FAISS index")
             return vector_id
-            
+
         except Exception as e:
             raise FAISSError(f"Failed to upload chunk {chunk.id}: {str(e)}")
     
@@ -100,11 +115,11 @@ class FAISSVectorDB(VectorStorageBase):
             raise FAISSError(f"Failed to retrieve vector {vector_id}: {str(e)}")
     
     def query(
-        self, 
-        vector: List[float], 
-        top_k: int = 10, 
-        include_metadata: bool = True, 
-        filter: Optional[Dict[str, Any]] = None, 
+        self,
+        vector: List[float],
+        top_k: int = 10,
+        include_metadata: bool = True,
+        filter: Optional[dict] = None,
     ) -> Any:
         """Query FAISS for similar vectors"""
         try:

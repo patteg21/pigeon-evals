@@ -1,8 +1,9 @@
 from abc import ABC, abstractmethod
-from typing import Optional, List, Dict, Any, Union
+from typing import Optional, List
 
 from models import DocumentChunk
-from models.configs.storage import SqliteConfig, PostgresConfig, FileStoreConfig, S3Config
+from models.configs.storage import TextStoreConfig
+
 
 class TextStorageError(Exception):
     """Base exception for text storage operations"""
@@ -12,7 +13,8 @@ class TextStorageError(Exception):
 class TextStorageBase(ABC):
     """Abstract base class for text storage implementations"""
     
-    def __init__(self, config: Union[SqliteConfig, PostgresConfig, FileStoreConfig, S3Config]):
+    def __init__(self, config: TextStoreConfig):
+
         self.config = config
     
     @property
@@ -22,7 +24,7 @@ class TextStorageBase(ABC):
         pass
     
     @abstractmethod
-    def store_document(self, doc_id: str, doc_data: Dict[str, Any]) -> bool:
+    def store_document(self, doc_id: str, doc_data: dict) -> bool:
         """Store document data in the text storage system"""
         pass
     
@@ -36,16 +38,16 @@ class TextStorageBase(ABC):
                 'path': chunk.document.path,
                 'text': chunk.document.text
             },
-            'embedding': chunk.embeddding
+            'embedding': chunk.embedding
         })
     
     @abstractmethod
-    def retrieve_document(self, doc_id: str) -> Optional[Dict[str, Any]]:
+    def retrieve_document(self, doc_id: str) -> Optional[dict]:
         """Retrieve document by ID"""
         pass
-    
+
     @abstractmethod
-    def retrieve_documents(self, doc_ids: List[str]) -> List[Dict[str, Any]]:
+    def retrieve_documents(self, doc_ids: List[str]) -> List[dict]:
         """Retrieve multiple documents by IDs"""
         pass
     

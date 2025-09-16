@@ -7,6 +7,7 @@ import diskcache as dc
 from models import DocumentChunk, Pooling
 from models.configs import EmbeddingConfig
 from utils import logger
+from utils.dry_run import dry_response
 
 cache = dc.Cache("data/.cache")
 
@@ -21,23 +22,19 @@ class BaseEmbedder(ABC):
     
     def _setup_dimensional_reduction(self):
         """Setup dimensional reduction if configured."""
-        dimension_reduction = self.config.dimension_reduction
-        if dimension_reduction:
-            reduction_type = dimension_reduction.type
-            if reduction_type == "PCA":
-                from .dimensional_reduction import PCAReducer
-                self.reducer = PCAReducer(dimension_reduction)
-                logger.info(f"Configured PCA reduction to {dimension_reduction.dims} dimensions")
-            elif reduction_type in ["UMAP", "T-SNE"]:
-                raise NotImplementedError(f"{reduction_type} dimensional reduction not implemented yet")
-            else:
-                logger.warning(f"Unknown dimensional reduction type: {reduction_type}")
+        if self.config.dimension_reduction:
+            from .dimensional_reduction import DimensionalReductionFactory
+            self.reducer = DimensionalReductionFactory.create_reducer(self.config.dimension_reduction)
+            if self.reducer:
+                logger.info(f"Configured {self.reducer.name} reduction to {self.config.dimension_reduction.dims} dimensions")
+
     
     @abstractmethod
     async def _embed_chunk_raw(self, chunk: DocumentChunk) -> List[float]:
         """Get raw embeddings for a single chunk (to be implemented by subclasses)."""
         raise NotImplementedError
     
+    @dry_response(mock_factory=lambda self, chunks: self._mock_raw_embeddings(chunks))
     async def _embed_chunks_raw(self, chunks: List[DocumentChunk]) -> List[List[float]]:
         """Get raw embeddings for multiple chunks (can be overridden for batch efficiency)."""
         embeddings = []
@@ -73,7 +70,7 @@ class BaseEmbedder(ABC):
                 id=chunk.id,
                 text=chunk.text,
                 document=chunk.document,
-                embeddding=embedding  # Note: keeping original typo for compatibility
+                embedding=embedding
             )
             embedded_chunks.append(embedded_chunk)
         
@@ -128,3 +125,16 @@ class BaseEmbedder(ABC):
                 # Exponential backoff with jitter
                 delay = base_delay * (2 ** attempt) + (time.time() % 1)
                 await asyncio.sleep(delay)
+
+    def _mock_raw_embeddings(self, chunks: List[DocumentChunk]) -> List[List[float]]:
+        """Generate mock raw embeddings for multiple chunks."""
+        import random
+        random.seed(42)  # Deterministic for testing
+
+        # Determine raw embedding dimensions
+        # For models like sentence-transformers/all-MiniLM-L6-v2, it's 384
+        # But this will be reduced by PCA if configured
+        raw_dimensions = 384  # Standard for many embedding models
+
+        # Return full-dimensional embeddings (before PCA reduction)
+        return [[random.uniform(-1.0, 1.0) for _ in range(raw_dimensions)] for _ in chunks]

@@ -83,12 +83,12 @@ class HuggingFaceEmbedder(BaseEmbedder):
         try:
             # Get embedding for single text
             embedding = self.model.encode(
-                chunk.text, 
+                chunk.text,
                 convert_to_tensor=False,  # Return numpy array
                 normalize_embeddings=True # self.config.get("normalize", True)
             )
             return embedding.tolist()
-            
+
         except Exception as e:
             logger.error(f"Failed to embed chunk {chunk.id}: {e}")
             raise
@@ -98,12 +98,12 @@ class HuggingFaceEmbedder(BaseEmbedder):
         try:
             texts = [chunk.text for chunk in chunks]
             logger.info(f"Embedding {len(texts)} chunks in batches of {self.batch_size}")
-            
+
             # Process in batches for memory efficiency
             all_embeddings = []
             for i in range(0, len(texts), self.batch_size):
                 batch_texts = texts[i:i + self.batch_size]
-                
+
                 # Get batch embeddings
                 batch_embeddings = self.model.encode(
                     batch_texts,
@@ -111,17 +111,17 @@ class HuggingFaceEmbedder(BaseEmbedder):
                     normalize_embeddings= True, #self.config.get("normalize", True),
                     show_progress_bar=False  # Disable progress bar for batches
                 )
-                
+
                 # Convert to list of lists
                 batch_embeddings_list = [emb.tolist() for emb in batch_embeddings]
                 all_embeddings.extend(batch_embeddings_list)
-                
+
                 if (i // self.batch_size + 1) % 10 == 0:
                     logger.info(f"Processed {min(i + self.batch_size, len(texts))}/{len(texts)} chunks")
-            
+
             logger.info(f"Successfully embedded all {len(all_embeddings)} chunks")
             return all_embeddings
-            
+
         except Exception as e:
             logger.error(f"Failed to embed chunks: {e}")
             raise
@@ -135,3 +135,4 @@ class HuggingFaceEmbedder(BaseEmbedder):
             "device": str(self.model.device),
             "normalize_embeddings": True, # self.config.get("normalize", True)
         }
+

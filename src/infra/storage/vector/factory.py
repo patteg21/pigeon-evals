@@ -2,7 +2,10 @@ from .base import VectorStorageBase
 from .faiss import FAISSVectorDB
 from models.shared.base_factory import BaseFactory
 from utils.logger import logger
-from typing import Dict, Any, Optional
+from utils.config_manager import ConfigManager
+from models.configs.storage import VectorConfig
+from typing import Optional
+
 
 
 class VectorStorageFactory(BaseFactory):
@@ -15,32 +18,34 @@ class VectorStorageFactory(BaseFactory):
     }
     
     @classmethod
-    def create(cls, provider: str, config: Dict[str, Any]) -> VectorStorageBase:
+    def create(cls, provider: str, config: VectorConfig) -> VectorStorageBase:
         """Create a vector storage instance for the specified provider."""
         if provider not in cls._providers:
             logger.warning(f"Unknown vector provider '{provider}', falling back to FAISS")
             provider = "faiss"
-        
+
         storage_class = cls._providers[provider]
         logger.info(f"Creating {provider.upper()} vector storage")
         return storage_class(config)
-    
-    @classmethod
-    def get_config_key(cls) -> str:
-        return "vector storage"
 
     @classmethod
-    def get_default_provider(cls) -> str:
-        return "faiss"
+    def create_from_config(cls) -> Optional[VectorStorageBase]:
+        """Create a vector storage instance using the singleton config."""
+        config_manager = ConfigManager()
+        config = config_manager.config
 
-    @classmethod
-    def get_default_config(cls) -> Dict[str, Any]:
-        return {}
+        if config.storage and config.storage.vector:
+            vector_config = config.storage.vector
+            provider = vector_config.provider or "faiss"
 
-    @classmethod
-    def _extract_config_from_yaml(cls, yaml_config) -> Optional[Any]:
-        return yaml_config.storage.vector if yaml_config.storage else None
+            if provider not in cls._providers:
+                logger.warning(f"Unknown vector provider '{provider}', falling back to FAISS")
+                provider = "faiss"
 
-    @classmethod
-    def _extract_provider_from_config(cls, config_dict: Dict[str, Any]) -> str:
-        return config_dict.get("provider", "faiss")
+            storage_class = cls._providers[provider]
+            logger.info(f"Creating {provider.upper()} vector storage from config")
+            return storage_class(vector_config)
+        else:
+            logger.info("No vector storage config found, skipping vector storage")
+            return None
+

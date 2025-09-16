@@ -1,6 +1,6 @@
 task: "example_eval_task"
 dataset: 
-  path: "data/processed_filings"
+  path: "data/processed_filings/META"
 
 threading:
   max_workers: 8
@@ -42,10 +42,33 @@ storage:
     client: "sqlite"
     path: "./data/text_store.db"
     upload: true
+
+    # PostgreSQL options (commented out):
+    # host: "localhost"
+    # port: 5432
+    # database: "pigeon_evals"
+    # user: "postgres"
+    # password: ""
+
+    # S3 options (commented out):
+    # bucket_name: "pigeon-evals-documents"
+    # prefix: "documents/"
+    # access_key_id: null
+    # secret_access_key: null
+    # region: "us-east-1"
+    
+    # File store options (commented out):
+    # base_path: "data/documents"
   vector:
+    provider: "faiss"  # Added explicit provider
+    path: "./data/.faiss/index"
     upload: true
+    
     clear: false
     index: "eval_index"
+    dimension: 256  # Added to match embedding dimension_reduction
+    # Alternative vector options (commented out):
+    # index_name: "alternative_index"
   outputs:
     - "chunks"
     - "documents"

@@ -5,7 +5,7 @@ from pathlib import Path
 
 from .base import TextStorageBase, TextStorageError
 from models.documents import DocumentChunk
-from models.configs.storage import FileStoreConfig
+from models.configs.storage import TextStoreConfig
 
 
 class FileStoreError(TextStorageError):
@@ -16,7 +16,8 @@ class FileStoreError(TextStorageError):
 class FileStore(TextStorageBase):
     """Local file system storage implementation"""
     
-    def __init__(self, config: FileStoreConfig):
+    def __init__(self, config: TextStoreConfig):
+
         """Initialize file storage with base path"""
         super().__init__(config)
         self.base_path = Path(self.config.base_path, 'data/documents')
@@ -59,7 +60,8 @@ class FileStore(TextStorageBase):
                     'path': chunk.document.path,
                     'text': chunk.document.text
                 },
-                'embedding': chunk.embeddding
+                'embedding': chunk.embedding
+
             }
             
             with open(file_path, 'w', encoding='utf-8') as f:
