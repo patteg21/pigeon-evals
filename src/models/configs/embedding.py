@@ -9,7 +9,8 @@ from pydantic import BaseModel, Field
 class DimensionReduction(BaseModel):
     type: str = Field(..., description="Type of dimension reduction (PCA, UMAP, T-SNE)")
     dims: int = Field(..., description="Target dimensions")
-
+    seed: int = Field(42, description="Default Seed")
+    path: Optional[str] = Field(None, description='Path to pretrained Dimensitonal Reduction model')
 
 class EmbeddingConfig(BaseModel):
     provider: Literal["huggingface", "openai"] = Field(..., description="Embedding provider (openai, huggingface, etc.)")

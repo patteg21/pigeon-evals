@@ -1,13 +1,15 @@
 from abc import ABC, abstractmethod
-from typing import List, Any, Dict
+from typing import List, Any
+
 import numpy as np
 
+from models.configs.embedding import DimensionReduction
 
 class BaseDimensionalReducer(ABC):
     """Base class for dimensional reduction techniques."""
-    
-    def __init__(self, config: Dict[str, Any] = None):
-        self.config = config or {}
+
+    def __init__(self, config: DimensionReduction):
+        self.config: DimensionReduction = config 
         self.model = None
         self.is_fitted = False
     

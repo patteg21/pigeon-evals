@@ -62,7 +62,8 @@ async def main():
         if config.storage:
             if config.storage.text_store:
                 logger.info("Text Storing Data...")
-                pass
+                storage_runner = StorageRunner()
+                await storage_runner.run(embedded_chunks)
 
             if config.storage.vector:
                 logger.info("Vector Storing Data...")

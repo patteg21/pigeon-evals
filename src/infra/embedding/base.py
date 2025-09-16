@@ -72,7 +72,6 @@ class BaseEmbedder(ABC):
             embedded_chunk = DocumentChunk(
                 id=chunk.id,
                 text=chunk.text,
-                type_chunk=chunk.type_chunk,
                 document=chunk.document,
                 embeddding=embedding  # Note: keeping original typo for compatibility
             )
