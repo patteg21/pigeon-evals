@@ -1,29 +1,30 @@
 from .base import LLMBaseClient
-from typing import Dict, Any, Optional
+from typing import Optional
 from utils.logger import logger
 import boto3
 import json
 import os
+from models.configs.eval import EvaluationConfig
 
 class BedrockLLM(LLMBaseClient):
     """AWS Bedrock LLM client."""
-    
-    def __init__(self, config: Dict[str, Any] = None):
+
+    def __init__(self, config: EvaluationConfig):
         super().__init__(config)
-        self.model = self.config.get("model", "anthropic.claude-3-haiku-20240307-v1:0")
-        self.region = self.config.get("region", "us-east-1")
-        
-        # AWS credentials can come from config, environment, or IAM role
+        self.model = self.config.model or "anthropic.claude-3-haiku-20240307-v1:0"
+
+        # For Bedrock, we'll use environment variables or IAM roles for AWS credentials
+        # since EvaluationConfig doesn't have AWS-specific fields
         session_kwargs = {}
-        if self.config.get("aws_access_key_id"):
-            session_kwargs["aws_access_key_id"] = self.config["aws_access_key_id"]
-        if self.config.get("aws_secret_access_key"):
-            session_kwargs["aws_secret_access_key"] = self.config["aws_secret_access_key"]
-        if self.config.get("aws_session_token"):
-            session_kwargs["aws_session_token"] = self.config["aws_session_token"]
+        if os.getenv("AWS_ACCESS_KEY_ID"):
+            session_kwargs["aws_access_key_id"] = os.getenv("AWS_ACCESS_KEY_ID")
+        if os.getenv("AWS_SECRET_ACCESS_KEY"):
+            session_kwargs["aws_secret_access_key"] = os.getenv("AWS_SECRET_ACCESS_KEY")
+        if os.getenv("AWS_SESSION_TOKEN"):
+            session_kwargs["aws_session_token"] = os.getenv("AWS_SESSION_TOKEN")
         
         self.session = boto3.Session(**session_kwargs)
-        self.client = self.session.client("bedrock-runtime", region_name=self.region)
+        self.client = self.session.client("bedrock-runtime", region_name=os.getenv("AWS_DEFAULT_REGION", "us-east-1"))
         logger.info(f"Initializing Bedrock LLM with model: {self.model}")
     
     @property

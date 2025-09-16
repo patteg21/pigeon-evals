@@ -4,6 +4,7 @@ from pathlib import Path
 from typing import List
 
 from utils import logger, DataLoader
+from utils.config_manager import ConfigManager
 from models import YamlConfig, Document, DocumentChunk
 from runner import EmbeddingRunner, StorageRunner, ReportRunner, ParserRunner
 from utils.dry_run import set_dry_run_mode
@@ -37,43 +38,39 @@ async def main():
     
     # Load configuration
     try:
-        configs: List[YamlConfig] = load_yaml_config(args.config)
-        
-        # Process each configuration
-        for config in configs:
+        # Initialize the config singleton
+        config_manager = ConfigManager()
+        config_manager.load_config(args.config)
+        config = config_manager.config
 
-            loader = DataLoader(config.dataset)
-            documents: List[Document] = loader.load()
+        # Process the configuration
+        loader = DataLoader(config.dataset)
+        documents: List[Document] = loader.load()
 
-            logger.info(f"Processing configuration: {config.task}")
+        logger.info(f"Processing configuration: {config.task}")
 
+        if config.parser:
+            logger.info("Parsing Data... ")
+            parser_runner = ParserRunner(config.parser)
+            document_chunks: List[DocumentChunk] = await parser_runner.run(documents)
+            print(len(document_chunks))
 
-            if config.parser:
-                logger.info("Parsing Data... ")
-                parser_runner = ParserRunner(config.parser)
-                document_chunks: List[DocumentChunk] = await parser_runner.run(documents)
-                print(len(document_chunks))
+        if config.embedding:
+            embedding_runner = EmbeddingRunner()
+            embedded_chunks: List[DocumentChunk] = await embedding_runner.run(document_chunks)
 
-            if config.embedding:            
-                embedding_runner = EmbeddingRunner()
-                embedded_chunks: List[DocumentChunk] = await embedding_runner.run(document_chunks)
-
-
-            if config.storage:
-                
-                if config.storage.text_store:
-                    logger.info("Text Storing Data...")
-
-                    pass
-
-                if config.storage.vector:
-                    logger.info("Vector Storing Data...")
-                    pass
-            
-            if config.eval:
-                logger.info("Evaluating Data...")
-
+        if config.storage:
+            if config.storage.text_store:
+                logger.info("Text Storing Data...")
                 pass
+
+            if config.storage.vector:
+                logger.info("Vector Storing Data...")
+                pass
+
+        if config.eval:
+            logger.info("Evaluating Data...")
+            pass
             
     except ValueError as e:
         logger.error(f"Error parsing YAML file: {e}")

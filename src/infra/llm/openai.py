@@ -1,16 +1,17 @@
 from .base import LLMBaseClient
-from typing import Dict, Any, Optional
+from typing import Optional
 from utils.logger import logger
 import openai
 import os
+from models.configs.eval import EvaluationConfig
 
 class OpenAILLM(LLMBaseClient):
     """OpenAI LLM client."""
-    
-    def __init__(self, config: Dict[str, Any] = None):
+
+    def __init__(self, config: EvaluationConfig):
         super().__init__(config)
-        self.model = self.config.get("model", "gpt-4o")
-        self.api_key = self.config.get("api_key") or os.getenv("OPENAI_API_KEY")
+        self.model = self.config.model or "gpt-4o"
+        self.api_key = self.config.api_key or os.getenv("OPENAI_API_KEY")
         
         if not self.api_key:
             raise ValueError("OpenAI API key not found in config or environment variables")

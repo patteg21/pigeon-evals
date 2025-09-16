@@ -1,16 +1,17 @@
 from .base import LLMBaseClient
-from typing import Dict, Any, Optional
+from typing import Optional
 from utils.logger import logger
 import anthropic
 import os
+from models.configs.eval import EvaluationConfig
 
 class AnthropicLLM(LLMBaseClient):
     """Anthropic LLM client."""
-    
-    def __init__(self, config: Dict[str, Any] = None):
+
+    def __init__(self, config: EvaluationConfig):
         super().__init__(config)
-        self.model = self.config.get("model", "claude-3-haiku-20240307")
-        self.api_key = self.config.get("api_key") or os.getenv("ANTHROPIC_API_KEY")
+        self.model = self.config.model or "claude-3-haiku-20240307"
+        self.api_key = self.config.api_key or os.getenv("ANTHROPIC_API_KEY")
         
         if not self.api_key:
             raise ValueError("Anthropic API key not found in config or environment variables")

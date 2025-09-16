@@ -1,12 +1,13 @@
 from abc import ABC, abstractmethod
-from typing import Dict, Any, Optional
+from typing import Optional
+from models.configs.eval import EvaluationConfig
 
 class LLMBaseClient(ABC):
-    
-    def __init__(self, config: Dict[str, Any] = None):
+
+    def __init__(self, config: EvaluationConfig):
         super().__init__()
-        self.config = config or {}
-        self.model = self.config.get("model")
+        self.config = config
+        self.model = self.config.model
     
     @abstractmethod
     def invoke(self, prompt: Optional[str] = None, query: Optional[str] = None, **kwargs) -> str:
