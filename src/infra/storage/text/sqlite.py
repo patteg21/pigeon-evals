@@ -1,13 +1,13 @@
 
 import sqlite3
-from typing import Optional, List, Dict, Any
+from typing import Optional, List
 from contextlib import contextmanager
 from pathlib import Path
 import json
 
 from .base import TextStorageBase, TextStorageError
 from models.documents import DocumentChunk
-from models.configs.storage import SqliteConfig
+from models.configs.storage import TextStoreConfig
 
 
 class SQLiteError(TextStorageError):
@@ -16,7 +16,7 @@ class SQLiteError(TextStorageError):
 
 
 class SQLiteDB(TextStorageBase):
-    def __init__(self, config: SqliteConfig):
+    def __init__(self, config: TextStoreConfig):
         """Initialize SQLite client with database path"""
         super().__init__(config)
         self.db_path = self.config.path or "data/.sql/chunks.db"
@@ -63,7 +63,7 @@ class SQLiteDB(TextStorageBase):
         finally:
             conn.close()
     
-    def store_document(self, doc_id: str, doc_data: Dict[str, Any]) -> bool:
+    def store_document(self, doc_id: str, doc_data: dict) -> bool:
         """Store document data in SQLite database"""
         try:
             with self._get_connection() as conn:
@@ -94,7 +94,7 @@ class SQLiteDB(TextStorageBase):
                 
                 cursor.execute("""
                     INSERT OR REPLACE INTO documents (id, text, document_data, embedding) VALUES (?, ?, ?, ?)
-                """, (chunk.id, chunk.text, json.dumps(document_data), json.dumps(chunk.embeddding)))
+                """, (chunk.id, chunk.text, json.dumps(document_data), json.dumps(chunk.embedding)))
                 
                 conn.commit()
                 return True
@@ -103,23 +103,23 @@ class SQLiteDB(TextStorageBase):
             raise SQLiteError(f"Failed to store document chunk {chunk.id}: {str(e)}")
     
 
-    def retrieve_document(self, doc_id: str) -> Optional[Dict[str, Any]]:
+    def retrieve_document(self, doc_id: str) -> Optional[dict]:
         """Retrieve document by ID"""
         try:
             with self._get_connection() as conn:
                 cursor = conn.cursor()
                 cursor.execute("SELECT * FROM documents WHERE id = ?", (doc_id,))
                 row = cursor.fetchone()
-                
+
                 if row:
                     return dict(row)
                 return None
-                
+
         except Exception as e:
             raise SQLiteError(f"Failed to retrieve document {doc_id}: {str(e)}")
-    
 
-    def retrieve_documents(self, doc_ids: List[str]) -> List[Dict[str, Any]]:
+
+    def retrieve_documents(self, doc_ids: List[str]) -> List[dict]:
         """Retrieve multiple documents by IDs"""
         if not doc_ids:
             return []

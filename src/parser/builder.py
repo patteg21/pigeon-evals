@@ -1,10 +1,10 @@
 from typing import List, Dict, Optional
 import re
 from uuid import uuid4
+from tqdm import tqdm
 
 from models import DocumentChunk, Document
 from models.configs.parser import ParserConfig, ProcessConfig, StepConfig
-
 from utils import logger
 
 class TextSplitterBuilder:
@@ -17,7 +17,7 @@ class TextSplitterBuilder:
     
     def process(self, document: Document) -> List[DocumentChunk]:
         document_chunks: List[DocumentChunk] = []
-
+        logger.info(f"Processing: {document.name}")
         for process in self.config.processes:
             chunks = self._process(process, document)
             document_chunks.extend(chunks)
@@ -25,12 +25,10 @@ class TextSplitterBuilder:
         return document_chunks
 
     def _process(
-            self, 
+            self,
             process: ProcessConfig,
             document: Document
         ) -> List[DocumentChunk]:
-        logger.info(f"  Document Processor: {process.name}")
-
         # start with a single chunk which is just the document
         original_chunk = DocumentChunk(
             id=uuid4().hex,
@@ -39,24 +37,24 @@ class TextSplitterBuilder:
         )
 
         chunks: List[DocumentChunk] = [original_chunk]
-        for step in process.steps:
+        for step in tqdm(process.steps, desc=f"Processing {process.name}", unit="step", leave=False):
             chunks = self._process_step(step, chunks, process)
-        
+
         return chunks
 
 
     def _process_step(
-            self, 
-            step: StepConfig, 
+            self,
+            step: StepConfig,
             chunks: List[DocumentChunk],
             process: ProcessConfig
         ) -> List[DocumentChunk]:
-        
+
         result_chunks: List[DocumentChunk] = []
-        
-        for chunk in chunks:
+
+        for chunk in tqdm(chunks, desc=f"Step: {step.strategy}", unit="chunk", leave=False):
             split_texts = self._split_text(chunk.text, step)
-            
+
             for i, split_text in enumerate(split_texts):
                 # Create chunk based on step configuration (empty handling is done in _split_text)
                 new_chunk = DocumentChunk(
@@ -64,7 +62,7 @@ class TextSplitterBuilder:
                     document=chunk.document
                 )
                 result_chunks.append(new_chunk)
-        
+
         return result_chunks
 
     def _split_text(self, text: str, step: StepConfig) -> List[str]:

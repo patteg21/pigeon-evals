@@ -73,22 +73,14 @@ def _generate_mock_embedding(dimensions: int = 384) -> List[float]:
 
 
 def _generate_mock_chunks(chunks: List[DocumentChunk], dimensions: int = 384) -> List[DocumentChunk]:
-    """Generate mock DocumentChunks with fake embeddings."""
-    mock_chunks = []
-    
-    for i, chunk in enumerate(chunks):
-        # Create new chunk with mock embedding
-        mock_embedding = _generate_mock_embedding(dimensions)
-        
-        mock_chunk = DocumentChunk(
-            id=chunk.id,
-            text=chunk.text,
-            document=chunk.document,
-            embeddding=mock_embedding  # Note: keeping original typo for compatibility
-        )
-        mock_chunks.append(mock_chunk)
-    
-    return mock_chunks
+    """Add mock embeddings to existing DocumentChunks."""
+    # Modify original chunks in place to add embeddings
+    for chunk in chunks:
+        if not chunk.embedding:  # Only add embedding if it doesn't exist
+            mock_embedding = _generate_mock_embedding(dimensions)
+            chunk.embedding = mock_embedding
+
+    return chunks
 
 
 async def _generate_default_mock(func: Callable, *args, **kwargs) -> Any:

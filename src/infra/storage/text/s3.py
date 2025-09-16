@@ -5,7 +5,7 @@ from typing import Optional, List, Dict, Any
 
 from .base import TextStorageBase, TextStorageError
 from models.documents import DocumentChunk
-from models.configs.storage import S3Config
+from models.configs.storage import TextStoreConfig
 
 
 class S3Error(TextStorageError):
@@ -14,7 +14,7 @@ class S3Error(TextStorageError):
 
 
 class S3Storage(TextStorageBase):
-    def __init__(self, config: S3Config):
+    def __init__(self, config: TextStoreConfig):
         """Initialize S3 client with configuration"""
         super().__init__(config)
         self.bucket_name = self.config.bucket_name or 'pigeon-evals-documents'
@@ -88,7 +88,7 @@ class S3Storage(TextStorageBase):
                     'path': chunk.document.path,
                     'text': chunk.document.text
                 },
-                'embedding': chunk.embeddding
+                'embedding': chunk.embedding
             }
             
             self.client.put_object(

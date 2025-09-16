@@ -21,17 +21,11 @@ class BaseEmbedder(ABC):
     
     def _setup_dimensional_reduction(self):
         """Setup dimensional reduction if configured."""
-        dimension_reduction = self.config.dimension_reduction
-        if dimension_reduction:
-            reduction_type = dimension_reduction.type
-            if reduction_type == "PCA":
-                from .dimensional_reduction import PCAReducer
-                self.reducer = PCAReducer(dimension_reduction)
-                logger.info(f"Configured PCA reduction to {dimension_reduction.dims} dimensions")
-            elif reduction_type in ["UMAP", "T-SNE"]:
-                raise NotImplementedError(f"{reduction_type} dimensional reduction not implemented yet")
-            else:
-                logger.warning(f"Unknown dimensional reduction type: {reduction_type}")
+        if self.config.dimension_reduction:
+            from .dimensional_reduction import DimensionalReductionFactory
+            self.reducer = DimensionalReductionFactory.create_reducer(self.config.dimension_reduction)
+            if self.reducer:
+                logger.info(f"Configured {self.reducer.name} reduction to {self.config.dimension_reduction.dims} dimensions")
     
     @abstractmethod
     async def _embed_chunk_raw(self, chunk: DocumentChunk) -> List[float]:
@@ -73,7 +67,7 @@ class BaseEmbedder(ABC):
                 id=chunk.id,
                 text=chunk.text,
                 document=chunk.document,
-                embeddding=embedding  # Note: keeping original typo for compatibility
+                embedding=embedding
             )
             embedded_chunks.append(embedded_chunk)
         
