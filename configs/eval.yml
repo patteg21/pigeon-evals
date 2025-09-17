@@ -1,4 +1,17 @@
 
+storage:
+  text_store:
+    client: "sqlite"
+    path: "./data/text_store.db"
+    upload: false
+
+    
+  vector:
+    provider: "faiss"  
+    path: "./data/.faiss/index"
+    upload: false
+
+
 eval:
   top_k: 10
   provider: "openai"

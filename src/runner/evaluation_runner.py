@@ -6,7 +6,7 @@ from pathlib import Path
 from typing import List, Dict, Any
 
 from runner.base import Runner
-
+from infra.llm import LLMFactory
 from models.configs.eval import EvaluationConfig, AgentTest, HumanTest, LLMTest
 from utils.config_manager import ConfigManager
 
@@ -25,6 +25,7 @@ class EvaluationRunner(Runner):
         self.config: EvaluationConfig  = config_manager.config.eval
         
         self.output_dir = f"output/{self.full_config.run_id}/"
+        self.llm_provider = LLMFactory().create(self.config.llm) 
         os.makedirs(self.output_dir, exist_ok=True)
 
     def _load_all_tests(self) -> List[LLMTest | HumanTest | AgentTest]:
@@ -93,12 +94,23 @@ class EvaluationRunner(Runner):
 
         return all_tests
     
+
+
+
     async def run(
             self, 
         ):
 
         tests: List[LLMTest | HumanTest | AgentTest] = self._load_all_tests
         await self._generate_report()
+
+
+    async def _llm_test(self, test: LLMTest | HumanTest | AgentTest):
+        pass
+
+    async def _human_test(self, test: LLMTest | HumanTest | AgentTest):
+        pass
+
 
 
     async def _generate_report(self):

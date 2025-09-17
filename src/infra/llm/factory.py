@@ -1,10 +1,14 @@
+from typing import Dict, Any, Optional
+
 from .base import LLMBaseClient
 from .openai import OpenAILLM
 from .anthropic import AnthropicLLM
 from .gemini import GeminiLLM
 from .bedrock import BedrockLLM
+
+from models.configs.eval import LLMConfig
 from utils.logger import logger
-from typing import Dict, Any, Optional
+
 
 
 class LLMFactory():
@@ -18,14 +22,14 @@ class LLMFactory():
     }
     
     @classmethod
-    def create(cls, provider: str, config: Dict[str, Any]) -> LLMBaseClient:
+    def create(cls, config: LLMConfig) -> LLMBaseClient:
         """Create an LLM instance for the specified provider."""
-        if provider not in cls._providers:
-            logger.warning(f"Unknown LLM provider '{provider}', falling back to OpenAI")
-            provider = "openai"
+        if config.provider not in cls._providers:
+            logger.warning(f"Unknown LLM provider '{config.provider}', falling back to OpenAI")
+            provider = config.provider
         
         llm_class = cls._providers[provider]
-        logger.info(f"Creating {provider.title()} LLM with model: {config.get('model', 'default')}")
+        logger.info(f"Creating {provider.title()} LLM with model: {config.model}")
         return llm_class(config)
     
     @classmethod

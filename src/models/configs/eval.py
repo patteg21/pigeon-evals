@@ -1,5 +1,5 @@
 from typing import Optional, List, Union, Literal
-
+import os
 
 from pydantic import BaseModel, Field
 
@@ -46,14 +46,19 @@ class TestConfig(BaseModel):
     tests:  List[Union[LLMTest, AgentTest, HumanTest]] = Field([], description="Specific Test cases we care about...")
 
 
+class LLMConfig(BaseModel):
+    provider: str = Field(..., default="openai", description="Generator provider")
+    model: str = Field(..., default="gpt-4o", description="Generator model name")
+    api_key: Optional[str] = Field(..., default=os.getenv("OPENAI_API_KEY", None), description="API Key for associated model")
+
+
+
 
 class EvaluationConfig(BaseModel):
     top_k: Optional[int] = Field(None, description="Number of top results to retrieve")
     rerank: Optional[RerankConfig] = Field(None, description="A Reranker on top of the Retrieval")
 
-    provider: str = Field(..., description="Generator provider")
-    model: str = Field(..., description="Generator model name")
-    api_key: Optional[str] = Field(None, description="API Key for associated model")
+    llm: Optional[LLMConfig] = Field(None, description="Configuration for the LLM")
 
     evaluations: bool = Field(True, description="If evaluations are being used for this...")
     metrics: List[Literal["precision", "recall", "hit-rate", "mrr", "ndcg"]] = Field(
