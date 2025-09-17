@@ -8,6 +8,7 @@ import json
 from .base import TextStorageBase, TextStorageError
 from models.documents import DocumentChunk
 from models.configs.storage import TextStoreConfig
+from utils import logger
 
 
 
@@ -172,6 +173,8 @@ class SQLiteDB(TextStorageBase):
                 cursor = conn.cursor()
                 cursor.execute("DELETE FROM documents")
                 conn.commit()
+                
+                logger.info("Cleared All in SQLiteDB")
                 return True
                 
         except Exception as e:

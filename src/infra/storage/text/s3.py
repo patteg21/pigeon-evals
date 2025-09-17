@@ -6,6 +6,7 @@ from typing import Optional, List, Dict, Any
 from .base import TextStorageBase, TextStorageError
 from models.documents import DocumentChunk
 from models.configs.storage import TextStoreConfig
+from utils import logger
 
 
 class S3Error(TextStorageError):
@@ -165,6 +166,8 @@ class S3Storage(TextStorageBase):
                         Bucket=self.bucket_name,
                         Delete={'Objects': objects_to_delete}
                     )
+            logger.info("Cleared All in S3Storage")
+
             return True
         except Exception as e:
             raise S3Error(f"Failed to clear documents: {str(e)}")

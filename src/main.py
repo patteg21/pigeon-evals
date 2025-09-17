@@ -6,7 +6,7 @@ from typing import List
 from utils import logger, DataLoader
 from utils.config_manager import ConfigManager
 from models import YamlConfig, Document, DocumentChunk
-from runner import EmbeddingRunner, StorageRunner, ReportRunner, ParserRunner
+from runner import EmbeddingRunner, StorageRunner, EvaluationRunner, ParserRunner
 from utils.dry_run import set_dry_run_mode
 
 def load_yaml_config(config_path: str) -> List[YamlConfig]:
@@ -59,18 +59,15 @@ async def main():
             embedded_chunks: List[DocumentChunk] = await embedding_runner.run(document_chunks)
 
         if config.storage:
-            if config.storage.text_store:
+            if config.storage.text_store or config.storage.vector:
                 logger.info("Text Storing Data...")
                 storage_runner = StorageRunner()
                 await storage_runner.run(embedded_chunks)
 
-            if config.storage.vector:
-                logger.info("Vector Storing Data...")
-                pass
-
         if config.eval:
             logger.info("Evaluating Data...")
-            pass
+            evaluation_runner = EvaluationRunner()
+            await evaluation_runner.run()
             
     except ValueError as e:
         logger.error(f"Error parsing YAML file: {e}")

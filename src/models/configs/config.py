@@ -1,6 +1,6 @@
 from typing import Optional, Union, Literal, List
 from pathlib import Path
-from uuid import uuid4
+from datetime import datetime
 import yaml
 
 from pydantic import BaseModel, Field, field_validator
@@ -44,7 +44,10 @@ class DatasetConfig(BaseModel):
 
 
 class YamlConfig(BaseModel):
-    run_id: str = Field(uuid4().hex, description="Task name")
+    run_id: str = Field(
+        default_factory=lambda: datetime.now().strftime("%Y-%m-%d:%H%M%S:%f"),
+        description="Datetime-based run identifier"
+    )    
     task: str = Field(..., description="Task name")
 
     
