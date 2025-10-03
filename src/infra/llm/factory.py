@@ -42,7 +42,7 @@ class LLMFactory():
 
     @classmethod
     def get_default_config(cls) -> Dict[str, Any]:
-        return {"model": "gpt-4o"}
+        return {"model": "gpt-4o-mini"}
 
     @classmethod
     def _extract_config_from_yaml(cls, yaml_config) -> Optional[Any]:

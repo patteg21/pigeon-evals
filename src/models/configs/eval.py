@@ -48,7 +48,7 @@ class TestConfig(BaseModel):
 
 class LLMConfig(BaseModel):
     provider: str = Field(..., default="openai", description="Generator provider")
-    model: str = Field(..., default="gpt-4o", description="Generator model name")
+    model: str = Field(..., default="gpt-4o-mini", description="Generator model name")
     api_key: Optional[str] = Field(..., default=os.getenv("OPENAI_API_KEY", None), description="API Key for associated model")
 
 
