@@ -95,22 +95,29 @@ class EvaluationRunner(Runner):
         return all_tests
     
 
-
-
     async def run(
             self, 
         ):
 
         tests: List[LLMTest | HumanTest | AgentTest] = self._load_all_tests
+
+        for test in tests:
+            
+            # handle each case
+            pass
+
         await self._generate_report()
 
 
-    async def _llm_test(self, test: LLMTest | HumanTest | AgentTest):
+    async def _llm_test(self, test: LLMTest):
         pass
 
-    async def _human_test(self, test: LLMTest | HumanTest | AgentTest):
+    async def _human_test(self, test: HumanTest):
         pass
 
+
+    async def _agent_test(self, test: AgentTest):
+        pass
 
 
     async def _generate_report(self):

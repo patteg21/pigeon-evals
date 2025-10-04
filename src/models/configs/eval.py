@@ -1,4 +1,4 @@
-from typing import Optional, List, Union, Literal
+from typing import Optional, List, Union, Literal, Dict
 import os
 
 from pydantic import BaseModel, Field
@@ -10,6 +10,7 @@ from pydantic import BaseModel, Field
 class MCPConfig(BaseModel):
     command: str
     args: List[str]
+    env: List[Dict[str, str]]
 
 
 class AgentTest(BaseModel):

@@ -13,6 +13,7 @@ class StepConfig(BaseModel):
     ignore_case: bool = Field(False, description="Case-insensitive matching for regex")
     keep_empty: bool = Field(False, description="Keep empty chunks after splitting")
     trim_whitespace: bool = Field(True, description="Trim whitespace from chunks")
+    remove: bool = Field(..., default=False, description="Removes the chunks from the orignal text so other StepConfigs do not consider")
 
 
 class ProcessConfig(BaseModel):
@@ -32,14 +33,6 @@ class SplitStageConfig(BaseModel):
     keep_separator: bool = Field(False, description="Whether to keep separators in chunks")
 
 
-class MultiStageParserConfig(BaseModel):
-    """Configuration for multi-stage text parsing."""
-    stages: List[SplitStageConfig] = Field(..., description="List of parsing stages to apply in order")
-
-
-class RegexParserConfig(BaseModel):
-    """Legacy regex parser configuration."""
-    patterns: List[str] = Field(..., description="List of regex patterns")
 
 
 class ParserConfig(BaseModel):
