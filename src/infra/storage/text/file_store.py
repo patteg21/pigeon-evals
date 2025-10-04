@@ -6,7 +6,7 @@ from pathlib import Path
 from .base import TextStorageBase, TextStorageError
 from models.documents import DocumentChunk
 from models.configs.storage import TextStoreConfig
-
+from utils import logger
 
 class FileStoreError(TextStorageError):
     """File store-specific exception for operations"""
@@ -118,6 +118,7 @@ class FileStore(TextStorageBase):
         try:
             for json_file in self.base_path.glob('*.json'):
                 json_file.unlink()
+            logger.info("Cleared all in FileStorage")
             return True
         except Exception as e:
             raise FileStoreError(f"Failed to clear documents: {str(e)}")

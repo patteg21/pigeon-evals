@@ -1,6 +1,7 @@
 from typing import Dict, Any, List
 import torch
 from sentence_transformers import SentenceTransformer
+from tqdm import tqdm
 
 from models import DocumentChunk
 from models.configs import EmbeddingConfig
@@ -14,13 +15,9 @@ class HuggingFaceEmbedder(BaseEmbedder):
     
     def __init__(self, config: EmbeddingConfig):
         super().__init__(config)
-        
-        # Get model configuration
-        model_name = config.model
 
         # TODO: Allow users to switch these 
         self.device = "auto"
-        self.batch_size = 32
         self.max_seq_length = None  # Use model default if None
         
         # Auto-detect device if not specified
@@ -32,12 +29,11 @@ class HuggingFaceEmbedder(BaseEmbedder):
             else:
                 self.device = "cpu"
         
-        logger.info(f"Initializing HuggingFace embedder with model: {model_name}")
         logger.info(f"Using device: {self.device}")
         
         try:
             # Load the sentence transformer model
-            self.model = SentenceTransformer(model_name, device=self.device)
+            self.model = SentenceTransformer(self.model, device=self.device)
             
             # Log the model's default max sequence length
             model_default_length = self.model.max_seq_length
@@ -71,7 +67,7 @@ class HuggingFaceEmbedder(BaseEmbedder):
             logger.info(f"Model loaded successfully. Embedding dimension: {self.model.get_sentence_embedding_dimension()}")
             
         except Exception as e:
-            logger.error(f"Failed to load HuggingFace model '{model_name}': {e}")
+            logger.error(f"Failed to load HuggingFace model '{self.model}': {e}")
             raise
     
     @property
@@ -100,9 +96,11 @@ class HuggingFaceEmbedder(BaseEmbedder):
             logger.info(f"Embedding {len(texts)} chunks in batches of {self.batch_size}")
 
             # Process in batches for memory efficiency
+            # Use batch_size from config, -1 means process all at once
+            batch_size = len(texts) if self.batch_size == -1 else self.batch_size
             all_embeddings = []
-            for i in range(0, len(texts), self.batch_size):
-                batch_texts = texts[i:i + self.batch_size]
+            for i in tqdm(range(0, len(texts), batch_size), desc="Embedding batches"):
+                batch_texts = texts[i:i + batch_size]
 
                 # Get batch embeddings
                 batch_embeddings = self.model.encode(
@@ -115,9 +113,6 @@ class HuggingFaceEmbedder(BaseEmbedder):
                 # Convert to list of lists
                 batch_embeddings_list = [emb.tolist() for emb in batch_embeddings]
                 all_embeddings.extend(batch_embeddings_list)
-
-                if (i // self.batch_size + 1) % 10 == 0:
-                    logger.info(f"Processed {min(i + self.batch_size, len(texts))}/{len(texts)} chunks")
 
             logger.info(f"Successfully embedded all {len(all_embeddings)} chunks")
             return all_embeddings

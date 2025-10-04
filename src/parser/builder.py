@@ -40,6 +40,16 @@ class TextSplitterBuilder:
         for step in tqdm(process.steps, desc=f"Processing {process.name}", unit="step", leave=False):
             chunks = self._process_step(step, chunks, process)
 
+            # After processing with remove=True, update chunks to use the modified document text
+            if step.remove and chunks:
+                # Create a new chunk with the updated document text for the next step
+                updated_chunk = DocumentChunk(
+                    id=uuid4().hex,
+                    text=document.text,
+                    document=document
+                )
+                chunks = [updated_chunk]
+
         return chunks
 
 
@@ -55,13 +65,20 @@ class TextSplitterBuilder:
         for chunk in tqdm(chunks, desc=f"Step: {step.strategy}", unit="chunk", leave=False):
             split_texts = self._split_text(chunk.text, step)
 
-            for i, split_text in enumerate(split_texts):
+            for split_text in split_texts:
                 # Create chunk based on step configuration (empty handling is done in _split_text)
                 new_chunk = DocumentChunk(
                     text=split_text,
                     document=chunk.document
                 )
                 result_chunks.append(new_chunk)
+
+            # If remove is enabled, remove the processed chunk text from the original document
+            if step.remove and split_texts:
+                # Remove each split text from the original document.text
+                for split_text in split_texts:
+                    if split_text.strip():  # Only remove non-empty chunks
+                        chunk.document.text = chunk.document.text.replace(split_text, "", 1)
 
         return result_chunks
 

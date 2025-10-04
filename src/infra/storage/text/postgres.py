@@ -7,7 +7,7 @@ import json
 from .base import TextStorageBase, TextStorageError
 from models.documents import DocumentChunk
 from models.configs.storage import TextStoreConfig
-
+from utils import logger
 
 
 class PostgresError(TextStorageError):
@@ -160,6 +160,8 @@ class PostgresDB(TextStorageBase):
                 with conn.cursor() as cursor:
                     cursor.execute("DELETE FROM documents")
                     conn.commit()
+                    logger.info("Cleared all in PostGresDB")
+
                     return True
         except Exception as e:
             raise PostgresError(f"Failed to clear documents: {str(e)}")

@@ -1,0 +1,59 @@
+
+storage:
+  text_store:
+    client: "sqlite"
+    path: "./data/text_store.db"
+    upload: false
+
+    
+  vector:
+    provider: "faiss"  
+    path: "./data/.faiss/index"
+    upload: false
+
+
+eval:
+  top_k: 10
+  provider: "openai"
+  model: "gpt-4o"
+  evaluations: true
+  metrics:
+    - "ndcg"
+    - "precision"
+    - "recall"
+  
+  
+
+  rerank:
+    provider: "huggingface"
+    model: "cross-encoder/ms-marco-MiniLM-L-6-v2"
+    top_k: 5
+  
+
+
+  test:
+    load:
+      path: "data/tests/default.json"
+      key: "tests"
+      
+    tests:
+      - type: "llm"
+        name: "basic_llm_test"
+        query: "What is the main topic?"
+        prompt: "Analyze the retrieved documents and provide a summary."
+        eval_type:
+          - "single"
+      
+      - type: "human"
+        name: "human_review"
+        query: "Quality assessment query"
+      
+      - type: "agent"
+        name: "agent_test"
+        query: "Test agent functionality"
+        prompt: "Execute the agent task"
+        mcp:
+          command: "python"
+          args:
+            - "agent_script.py"
+            - "--test"

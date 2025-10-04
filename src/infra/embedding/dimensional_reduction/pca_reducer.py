@@ -142,3 +142,13 @@ class PCAReducer(BaseDimensionalReducer):
         logger.warning(f"DRY RUN: Mocking PCA load from {load_path}...")
         self.is_fitted = True
         return self
+
+    def clear(self) -> None:
+        """Clear saved PCA model artifacts."""
+        if os.path.exists(self.path):
+            os.remove(self.path)
+            logger.info(f"Cleared PCA model artifact at {self.path}")
+
+        # Also clear the in-memory model
+        self.model = None
+        self.is_fitted = False

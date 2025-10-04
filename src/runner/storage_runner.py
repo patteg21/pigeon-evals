@@ -3,7 +3,6 @@ from typing import List
 from tqdm import tqdm
 
 from models import DocumentChunk
-from utils.dry_run import dry_response
 from utils.logger import logger
 
 

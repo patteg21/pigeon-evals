@@ -7,7 +7,8 @@ from pydantic import BaseModel, Field
 # === Vector DB Config
 
 class VectorConfig(BaseModel):
-    provider: Optional[str] = Field(default="faiss", description="Vector storage provider")
+    provider: Optional[str] = Field(..., default="faiss", description="Vector storage provider")
+    nlp: Optional[Literal["tf-idf", "bm25"]] = Field(..., default=None, description="A Traditional Approach to Search using Language")
     path:  Optional[str] = Field(None, description="Vector storage provider")
     clear: bool = Field(default=False, description="Whether to clear existing vectors")
     index: Optional[str] = Field(None, description="Index name for vector storage")

@@ -4,6 +4,7 @@ import asyncio
 import time
 import numpy as np
 import diskcache as dc
+from tqdm.asyncio import tqdm
 from models import DocumentChunk, Pooling
 from models.configs import EmbeddingConfig
 from utils import logger
@@ -17,7 +18,14 @@ class BaseEmbedder(ABC):
     
     def __init__(self, config: EmbeddingConfig):
         self.config = config
+
+        self.model = config.model
+        self.pooling_strategy = config.pooling_strategy
+
         self.reducer = None
+        self.batch_size: int = config.batch_size
+        logger.info(f"Initializing embedder model: {self.model}")
+
         self._setup_dimensional_reduction()
     
     def _setup_dimensional_reduction(self):
@@ -38,7 +46,7 @@ class BaseEmbedder(ABC):
     async def _embed_chunks_raw(self, chunks: List[DocumentChunk]) -> List[List[float]]:
         """Get raw embeddings for multiple chunks (can be overridden for batch efficiency)."""
         embeddings = []
-        for chunk in chunks:
+        for chunk in tqdm(chunks, desc=f"Embedding chunks ({self.provider_name})"):
             embedding = await self._embed_chunk_raw(chunk)
             embeddings.append(embedding)
         return embeddings

@@ -1,0 +1,58 @@
+task: "example_eval_task"
+dataset: 
+  path: "data/processed_filings/META/META_10K_2020-01-30.txt"
+
+threading:
+  max_workers: 8
+
+preprocess:
+  ocr: "easyocr"
+
+parser:
+  type: "multistage"
+  processes:
+    - name: "table_extraction"
+      steps:
+        - strategy: "regex"
+          regex_pattern: "\\[TABLE_START\\][\\s\\S]*?\\[TABLE_END\\]"
+          ignore_case: true
+
+    - name: "paragraph_extraction"
+      steps:
+        - strategy: "regex"
+          regex_pattern: "\\[PAGE BREAK\\]"
+          ignore_case: true
+        - strategy: "paragraph"
+          chunk_size: null
+          chunk_overlap: 256 
+
+
+embedding:
+  provider: "huggingface"
+  model: "sentence-transformers/all-MiniLM-L6-v2"
+  pooling_strategy: "mean"
+  batch_size: -1 
+  dimension_reduction:
+    type: "PCA"
+    dims: 256
+    
+  use_threading: true
+
+
+storage:
+  text_store:
+    client: "sqlite"
+    path: "./data/text_store.db"
+    upload: true
+    clear: true
+
+    
+  vector:
+    provider: "faiss"  # Added explicit provider
+    nlp: "tf-idf" # "bm25"
+    path: "./data/.faiss/index"
+    upload: true
+    clear: true
+
+    index: "eval_index"
+    dimension: 256  # Added to match embedding dimension_reduction

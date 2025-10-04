@@ -1,5 +1,5 @@
-from typing import Optional, List, Union, Literal
-
+from typing import Optional, List, Union, Literal, Dict
+import os
 
 from pydantic import BaseModel, Field
 
@@ -10,6 +10,7 @@ from pydantic import BaseModel, Field
 class MCPConfig(BaseModel):
     command: str
     args: List[str]
+    env: List[Dict[str, str]]
 
 
 class AgentTest(BaseModel):
@@ -42,8 +43,15 @@ class RerankConfig(BaseModel):
 
 
 class TestConfig(BaseModel):
-    default_test: Optional[str] = Field("data/tests/default.json", description="A path to a JSON will defined custom test cases for faster iteration.")
+    load_test: Optional[str] = Field("data/tests/default.json", description="A path to a JSON will defined custom test cases for faster iteration.")
     tests:  List[Union[LLMTest, AgentTest, HumanTest]] = Field([], description="Specific Test cases we care about...")
+
+
+class LLMConfig(BaseModel):
+    provider: str = Field(..., default="openai", description="Generator provider")
+    model: str = Field(..., default="gpt-4o-mini", description="Generator model name")
+    api_key: Optional[str] = Field(..., default=os.getenv("OPENAI_API_KEY", None), description="API Key for associated model")
+
 
 
 
@@ -51,9 +59,7 @@ class EvaluationConfig(BaseModel):
     top_k: Optional[int] = Field(None, description="Number of top results to retrieve")
     rerank: Optional[RerankConfig] = Field(None, description="A Reranker on top of the Retrieval")
 
-    provider: str = Field(..., description="Generator provider")
-    model: str = Field(..., description="Generator model name")
-    api_key: Optional[str] = Field(None, description="API Key for associated model")
+    llm: Optional[LLMConfig] = Field(None, description="Configuration for the LLM")
 
     evaluations: bool = Field(True, description="If evaluations are being used for this...")
     metrics: List[Literal["precision", "recall", "hit-rate", "mrr", "ndcg"]] = Field(

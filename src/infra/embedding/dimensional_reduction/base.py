@@ -42,3 +42,8 @@ class BaseDimensionalReducer(ABC):
     def name(self) -> str:
         """Return the reducer name."""
         pass
+
+    @abstractmethod
+    def clear(self) -> None:
+        """Clear any saved artifacts or models."""
+        pass
