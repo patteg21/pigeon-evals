@@ -1,6 +1,6 @@
 from abc import ABC
 
-class Runner(ABC):
+class RunnerBase(ABC):
 
     def __init__(self):
         super().__init__()

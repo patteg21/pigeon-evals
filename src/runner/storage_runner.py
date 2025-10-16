@@ -8,10 +8,10 @@ from utils.logger import logger
 
 from infra.storage.text import TextStorageFactory
 from infra.storage.vector import VectorStorageFactory
-from runner.base import Runner
+from runner.base import RunnerBase
 
 
-class StorageRunner(Runner):
+class StorageRunner(RunnerBase):
 
     def __init__(self):
         super().__init__()

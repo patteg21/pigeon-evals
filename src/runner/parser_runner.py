@@ -1,10 +1,10 @@
 from typing import List
 
-from runner.base import Runner
+from runner.base import RunnerBase
 from parser.builder import TextSplitterBuilder
 from models import ParserConfig, Document, DocumentChunk
 
-class ParserRunner(Runner):
+class ParserRunner(RunnerBase):
     
     def __init__(
             self,

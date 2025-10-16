@@ -2,20 +2,25 @@ import json
 import os
 import logging
 import yaml
+import asyncio
 from pathlib import Path
 from typing import List, Dict, Any
 
-from runner.base import Runner
+from agents import Agent, Runner
+from agents.mcp import MCPServerStdio, MCPServerSse
+
+from runner.base import RunnerBase
 from infra.llm import LLMFactory
-from models.configs.eval import EvaluationConfig, AgentTest, HumanTest, LLMTest
+from models.configs.eval import EvaluationConfig, AgentTest, HumanTest, LLMTest, MCPStdioConfig, MCPSseConfig
 from utils.config_manager import ConfigManager
+
 
 
 class TestLoadError(Exception):
     """Custom exception for test loading errors."""
     pass
 
-class EvaluationRunner(Runner):
+class EvaluationRunner(RunnerBase):
     
     def __init__(self):
         super().__init__()
@@ -117,7 +122,127 @@ class EvaluationRunner(Runner):
 
 
     async def _agent_test(self, test: AgentTest):
-        pass
+        """
+        Execute an agent test with MCP server integration.
+
+        Args:
+            test: AgentTest configuration containing query, MCP config, and prompt
+
+        Returns:
+            Dict containing test results with response and execution metadata
+        """
+        logging.info(f"Running agent test: {test.name}")
+
+        # Create MCP server based on config type
+        mcp_server = None
+        try:
+            if isinstance(test.mcp, MCPStdioConfig):
+                # Local stdio MCP server
+                logging.info(f"Creating stdio MCP server: {test.mcp.command} {' '.join(test.mcp.args or [])}")
+                mcp_server = MCPServerStdio(
+                    name=test.name,
+                    params={
+                        "command": test.mcp.command,
+                        "args": test.mcp.args or [],
+                        "env": test.mcp.env or {},
+                        **({"cwd": test.mcp.cwd} if test.mcp.cwd else {})
+                    }
+                )
+            elif isinstance(test.mcp, MCPSseConfig):
+                # Remote SSE MCP server
+                logging.info(f"Creating SSE MCP server: {test.mcp.url}")
+                mcp_server = MCPServerSse(
+                    name=test.name,
+                    params={
+                        "url": test.mcp.url,
+                        "headers": test.mcp.headers or {},
+                        "timeout": test.mcp.timeout or 30.0,
+                        "sse_read_timeout": test.mcp.sse_read_timeout or 300.0
+                    }
+                )
+            else:
+                raise ValueError(f"Unknown MCP config type: {type(test.mcp)}")
+
+            # Initialize the agent with MCP server
+            async with mcp_server:
+                # Determine model to use (test-specific or global)
+                model = test.agent_model or self.config.llm.model if self.config.llm else "gpt-4o-mini"
+
+                # Create agent with custom instructions
+                agent_instructions = test.agent_instructions or """You are a helpful AI assistant with access to external tools.
+Your task is to answer the user's query using the provided context and available tools.
+Be precise and use tools when necessary to provide accurate information."""
+
+                agent = Agent(
+                    name=test.name,
+                    model=model,
+                    instructions=agent_instructions,
+                    mcp_servers=[mcp_server]
+                )
+
+                # Prepare the prompt with retrieved context
+                # TODO: Retrieve relevant documents based on test.query
+                # For now, use the query and prompt directly
+                user_message = test.prompt or test.query
+
+                logging.info(f"Executing agent with message: {user_message[:100]}...")
+
+                # Execute the agent with timeout
+                runner = Runner()
+                try:
+                    result = await asyncio.wait_for(
+                        runner.run(agent=agent, user_message=user_message),
+                        timeout=test.timeout or 60
+                    )
+
+                    # Extract response and tool calls
+                    response_text = ""
+                    tools_called = []
+
+                    # Process the result (structure depends on agent response format)
+                    if hasattr(result, 'messages'):
+                        for msg in result.messages:
+                            if hasattr(msg, 'content'):
+                                response_text += str(msg.content)
+                            if hasattr(msg, 'tool_calls') and msg.tool_calls:
+                                for tool_call in msg.tool_calls:
+                                    if hasattr(tool_call, 'function'):
+                                        tools_called.append(tool_call.function.name)
+                    elif isinstance(result, str):
+                        response_text = result
+                    else:
+                        response_text = str(result)
+
+                    # Compile test results
+                    test_result = {
+                        "test_name": test.name,
+                        "status": "completed",
+                        "query": test.query,
+                        "prompt": user_message,
+                        "response": response_text,
+                        "tools_called": tools_called,
+                        "model": model,
+                        "execution_time": None  # TODO: Add timing
+                    }
+
+                    logging.info(f"Agent test {test.name} completed successfully")
+                    return test_result
+
+                except asyncio.TimeoutError:
+                    logging.error(f"Agent test {test.name} timed out after {test.timeout}s")
+                    return {
+                        "test_name": test.name,
+                        "status": "timeout",
+                        "error": f"Test timed out after {test.timeout} seconds"
+                    }
+
+        except Exception as e:
+            logging.error(f"Error running agent test {test.name}: {e}", exc_info=True)
+            return {
+                "test_name": test.name,
+                "status": "error",
+                "error": str(e)
+            }
 
 
     async def _generate_report(self):

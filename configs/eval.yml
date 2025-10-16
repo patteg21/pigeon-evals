@@ -48,12 +48,49 @@ eval:
         name: "human_review"
         query: "Quality assessment query"
       
+      # Example 1: Local MCP server using stdio (similar to Claude Code format)
       - type: "agent"
-        name: "agent_test"
-        query: "Test agent functionality"
-        prompt: "Execute the agent task"
+        name: "calculator_agent_test"
+        query: "What is 15 multiplied by 23?"
+        prompt: "Calculate 15 * 23 and explain the result"
         mcp:
+          type: "stdio"
           command: "python"
           args:
-            - "agent_script.py"
-            - "--test"
+            - "-m"
+            - "calculator_mcp_server"
+          env:
+            DEBUG: "true"
+          cwd: "./mcp_servers"
+        timeout: 30
+        max_turns: 5
+        agent_model: "gpt-4o-mini"
+
+      # Example 2: Remote MCP server using SSE
+      - type: "agent"
+        name: "weather_agent_test"
+        query: "What's the weather in San Francisco?"
+        prompt: "Get the current weather for San Francisco and summarize it"
+        mcp:
+          type: "sse"
+          url: "https://api.example.com/mcp/weather"
+          headers:
+            Authorization: "Bearer ${WEATHER_API_KEY}"
+          timeout: 30.0
+          sse_read_timeout: 300.0
+        timeout: 45
+        agent_instructions: "You are a weather assistant. Use the weather tool to get accurate real-time data."
+
+      # Example 3: File system operations MCP server
+      - type: "agent"
+        name: "file_operations_test"
+        query: "List files in the data directory"
+        prompt: "List all files in the ./data directory and count them"
+        mcp:
+          type: "stdio"
+          command: "npx"
+          args:
+            - "-y"
+            - "@modelcontextprotocol/server-filesystem"
+            - "./data"
+        timeout: 20

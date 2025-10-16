@@ -7,18 +7,42 @@ from pydantic import BaseModel, Field
 # === Test Cases
 
 
-class MCPConfig(BaseModel):
-    command: str
-    args: List[str]
-    env: List[Dict[str, str]]
+class MCPStdioConfig(BaseModel):
+    """Configuration for local MCP servers using stdio (similar to Claude Code format)"""
+    type: Literal["stdio"] = Field("stdio", description="MCP server type")
+    command: str = Field(..., description="Command to run the MCP server")
+    args: Optional[List[str]] = Field(default_factory=list, description="Arguments for the command")
+    env: Optional[Dict[str, str]] = Field(default_factory=dict, description="Environment variables")
+    cwd: Optional[str] = Field(None, description="Working directory for the command")
+
+
+class MCPSseConfig(BaseModel):
+    """Configuration for remote MCP servers using SSE"""
+    type: Literal["sse"] = Field("sse", description="MCP server type")
+    url: str = Field(..., description="URL of the remote MCP server")
+    headers: Optional[Dict[str, str]] = Field(default_factory=dict, description="HTTP headers for authentication")
+    timeout: Optional[float] = Field(30.0, description="Request timeout in seconds")
+    sse_read_timeout: Optional[float] = Field(300.0, description="SSE read timeout in seconds")
+
+
+# Union type for MCP config
+MCPConfig = Union[MCPStdioConfig, MCPSseConfig]
 
 
 class AgentTest(BaseModel):
     type: str = Field("agent", description="Type discriminator for this test")
     name: str = Field(..., description="Name of this Test Case")
     query: str = Field(..., description="Query for the Vector Database")
-    prompt: Optional[str] = Field(None, description="Prompt for LLM-based tests")
-    mcp: MCPConfig = Field(..., description="Command to Test the MCP server")
+    prompt: Optional[str] = Field(None, description="Prompt for the agent to execute")
+    mcp: MCPConfig = Field(..., description="MCP server configuration (stdio or sse)")
+
+    # Execution configuration
+    timeout: Optional[int] = Field(60, description="Timeout in seconds for agent execution")
+    max_turns: Optional[int] = Field(10, description="Maximum conversation turns for the agent")
+
+    # Agent configuration
+    agent_model: Optional[str] = Field(None, description="Model to use for this specific agent test (overrides global)")
+    agent_instructions: Optional[str] = Field(None, description="Custom instructions for the agent")
 
 class LLMTest(BaseModel):
     type: str = Field("llm", description="Type discriminator for this test")
@@ -48,9 +72,9 @@ class TestConfig(BaseModel):
 
 
 class LLMConfig(BaseModel):
-    provider: str = Field(..., default="openai", description="Generator provider")
-    model: str = Field(..., default="gpt-4o-mini", description="Generator model name")
-    api_key: Optional[str] = Field(..., default=os.getenv("OPENAI_API_KEY", None), description="API Key for associated model")
+    provider: str = Field(default="openai", description="Generator provider")
+    model: str = Field(default="gpt-4o-mini", description="Generator model name")
+    api_key: Optional[str] = Field(default=None, description="API Key for associated model")
 
 
 
